@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBA Betting Tracker</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#172033;background:#f3f6fb;--page:#f3f6fb;--panel:#fff;--text:#172033;--muted:#65718a;--border:#e1e7f0;--input:#fff;--soft:#e8edf6;--header:#15284b}
+body{margin:0;padding:24px;background:var(--page);color:var(--text);transition:background .2s,color .2s}.wrap{max-width:1000px;margin:auto}
+header{background:var(--header);color:white;padding:24px;border-radius:18px;margin-bottom:18px}
+h1{margin:0 0 8px}.muted{color:var(--muted);font-size:14px}header .muted{color:#d4def2}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.card,.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px}
+.metric{font-size:24px;font-weight:700;margin-top:8px;overflow-wrap:anywhere}
+form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select{box-sizing:border-box;width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:var(--input);color:var(--text)}
+button,.linkbtn{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;background:#2457c5;color:white;text-decoration:none;display:inline-block}
+button.secondary{background:var(--soft);color:var(--text)}button.danger{background:#b42332;color:white}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);font-size:14px}th{color:var(--muted)}
+.tablewrap{overflow-x:auto}.win{color:#087443;font-weight:700}.lose{color:#b42332;font-weight:700}.pending{color:#91620a;font-weight:700}
+.note{background:var(--note-bg,#fff8e6);border:1px solid var(--note-border,#f1d58c);padding:12px;border-radius:10px;font-size:14px;line-height:1.5}
+body.dark{--page:#0b1220;--panel:#131d2e;--text:#e8eef9;--muted:#a6b3c9;--border:#2b3950;--input:#0d1727;--soft:#26354c;--header:#080e19;--note-bg:#332b17;--note-border:#79652d}
+body.dark .note{color:#f5e8bd}
+body.dark .win{color:#5fe0a0}body.dark .lose{color:#ff7f8a}body.dark .pending{color:#ffd16a}
+.theme-toggle{float:right;background:#fff;color:#172033;margin-left:12px}
+@media(max-width:720px){body{padding:12px}.cards{grid-template-columns:repeat(2,1fr)}form{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}}
+@media(max-width:450px){form{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.metric{font-size:20px}}
+
+.auth-panel{margin-bottom:18px}.auth-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:650px}.auth-status{margin-top:8px}.hidden{display:none!important}
+@media(max-width:520px){.auth-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙 Dark mode</button><h1>🏀 NBA Betting Tracker</h1>
+<div class="muted">Track your wagers, results, and net profit/loss in Philippine pesos.</div>
+<div class="actions"><a class="linkbtn" href="https://www.nba.com/scores" target="_blank" rel="noopener">Official NBA Scores ↗</a><a class="linkbtn" href="https://www.nba.com/stats" target="_blank" rel="noopener">Official NBA Stats ↗</a></div>
+</header>
+<div class="panel auth-panel" id="authPanel">
+<h2>🔐 Private Login</h2>
+<p class="muted">Mag-login gamit ang account na ginawa mo sa Supabase. Hindi available ang public sign-up.</p>
+<div id="loginArea">
+<form id="loginForm" style="max-width:650px">
+<div><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required placeholder="Your email"></div>
+<div><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required placeholder="Your password"></div>
+<div class="full actions"><button type="submit" id="loginBtn">Log in</button></div>
+</form>
+</div>
+<div id="loggedInArea" class="hidden"><p id="loggedInText"></p><div class="actions"><button type="button" class="secondary" id="syncNow">Refresh records</button><button type="button" class="danger" id="logoutBtn">Log out</button></div></div>
+<div id="authMessage" class="muted auth-status" role="status">Please log in to access your records.</div>
+</div>
+<div id="trackerContent" class="hidden">
+<div class="cards">
+<div class="card"><div class="muted">Net P/L (settled)</div><div id="net" class="metric">₱0.00</div></div>
+<div class="card"><div class="muted">Total staked (settled)</div><div id="staked" class="metric">₱0.00</div></div>
+<div class="card"><div class="muted">Wins / Losses</div><div id="wl" class="metric">0 / 0</div></div>
+<div class="card"><div class="muted">Bets today</div><div id="today" class="metric">0</div></div>
+</div>
+<div class="panel">
+<h2 id="formTitle">Add a bet</h2>
+<form id="betForm">
+<div><label for="date">Date (Philippines)</label><input id="date" type="date" required></div>
+<div><label for="game">NBA matchup / parlay name</label><input id="game" placeholder="e.g. 3-leg NBA parlay" required></div>
+<div><label for="type">Bet type</label><select id="type"><option>Moneyline / winner</option><option>Point spread</option><option>Game total (Over/Under)</option><option>Player points</option><option>Player rebounds</option><option>Player assists</option><option>Player 3-pointers</option><option>Parlay</option><option>Other</option></select></div>
+<div><label for="pick">Your pick / parlay legs</label><input id="pick" placeholder="e.g. Lakers ML + Over 220.5 + Player 20+ pts"></div>
+<div><label for="odds">Odds (optional, decimal)</label><input id="odds" type="number" min="1" step="0.01" placeholder="e.g. 1.91"></div>
+<div><label for="stakeInput">Stake (₱)</label><input id="stakeInput" type="number" min="0.01" step="0.01" placeholder="100" required></div>
+<div><label for="result">Result</label><select id="result"><option>Pending</option><option>Win</option><option>Lose</option><option>Push / Void</option></select></div>
+<div><label for="payout">Auto total payout (₱, odds × stake)</label><input id="payout" type="number" min="0" step="0.01" placeholder="Enter odds and stake" readonly><div class="muted" id="payoutHint">Enter decimal odds and stake to calculate the total payout.</div></div>
+<div><label for="notes">Notes (optional)</label><input id="notes" placeholder="Sportsbook, box score, etc."></div>
+<div class="full muted">For a parlay, enter all legs in “Your pick / parlay legs” and record the entire ticket as one bet. For a settled win, enter the actual total payout shown by your sportsbook. Net P/L = payout − stake. Loss = −stake. Push/void = ₱0 net (assuming stake returned). For partial parlay payouts or partial cash-outs, enter the actual amount received.</div>
+<div class="full actions"><button type="submit" id="saveBetBtn">Save bet</button><button type="button" class="secondary" id="cancelEdit" hidden>Cancel edit</button><button type="button" class="secondary" id="export">Export CSV backup</button><button type="button" class="secondary" id="importBtn">Import CSV backup</button><input id="importFile" type="file" accept=".csv,text/csv" hidden></div>
+</form>
+</div>
+<div class="panel" style="margin-top:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2>Bet history</h2><div style="min-width:220px"><label for="filter">Filter by date (optional)</label><input id="filter" type="date"><div class="actions" style="margin-top:6px"><button type="button" class="secondary" id="showAll">Show all bets</button></div><div class="muted">Showing all dates by default, including past and upcoming games.</div></div></div>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Matchup / player</th><th>Type & pick</th><th>Stake</th><th>Result</th><th>Net P/L</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+
+</div>
+</div>
+<div class="note" style="margin-top:18px"><strong>Accuracy note:</strong> This file saves your records on this browser and calculates the money correctly from the stake, result, and actual payout you enter. It does <strong>not</strong> automatically settle bets from NBA scores yet. A final team score can settle a winner bet, but spread, totals, and player props require the exact line and official box-score stats. Check the official NBA links above and your sportsbook's settlement rules before marking a bet final. Export CSV regularly as a backup.</div>
+<p class="muted">Privacy: betting records are stored in your Supabase account and protected by database RLS. Export CSV regularly as a backup.</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">render();
+</script>
+<script>
+const SUPABASE_URL = "https://tqfhrkvabhcxedlsmhdw.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PRa_AgxutAcUEkNk7xUUNQ__-_UX2UC";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const $=id=>document.getElementById(id);
+let bets=[];
+let editingId=null;
+let currentUser=null;
+const themeKey='nbaBetTracker_theme';
+function setTheme(dark){document.body.classList.toggle('dark',dark);$('themeToggle').textContent=dark?'☀️ Light mode':'🌙 Dark mode';try{localStorage.setItem(themeKey,dark?'dark':'light')}catch(e){}}
+try{setTheme(localStorage.getItem(themeKey)==='dark')}catch(e){setTheme(false)}
+$('themeToggle').onclick=()=>setTheme(!document.body.classList.contains('dark'));
+const now=new Date(), localDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+$('date').value=localDate;$('filter').value='';
+const peso=n=>'₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+function net(b){if(b.result==='Win')return Number(b.payout||0)-Number(b.stake);if(b.result==='Lose')return -Number(b.stake);return 0}
+function setMessage(msg,isError=false){$('authMessage').textContent=msg;$('authMessage').style.color=isError?'#b42332':''}
+function showLoggedIn(user){currentUser=user;$('loginArea').classList.toggle('hidden',!!user);$('loggedInArea').classList.toggle('hidden',!user);$('trackerContent').classList.toggle('hidden',!user);$('loggedInText').textContent=user?'Logged in as '+user.email:'';if(user){setMessage('Your records are connected to your private account.')}else{setMessage('Please log in to access your records.');bets=[];render();resetBetForm()}}
+async function loadBets(){if(!currentUser)return;setMessage('Loading your cloud records…');const {data,error}=await supabaseClient.from('bets').select('*').order('created_at',{ascending:true});if(error){setMessage('Could not load records: '+error.message,true);return}bets=(data||[]).map(r=>({id:r.id,date:r.bet_date,game:r.game,type:r.bet_type,pick:r.pick||'',odds:r.odds==null?'':String(r.odds),stake:Number(r.stake),result:r.result,payout:Number(r.payout||0),notes:r.notes||''}));render();setMessage('Cloud sync complete. '+bets.length+' record(s) loaded.')}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(SUPABASE_PUBLISHABLE_KEY==='PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE'){setMessage('Setup needed: replace PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE with your Supabase publishable key in this HTML file.',true);return} $('loginBtn').disabled=true;setMessage('Logging in…');const {data,error}=await supabaseClient.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});$('loginBtn').disabled=false;if(error){setMessage('Login failed: '+error.message,true);return}showLoggedIn(data.user);await loadBets()});
+$('logoutBtn').onclick=async()=>{await supabaseClient.auth.signOut();showLoggedIn(null)};
+$('syncNow').onclick=loadBets;
+function save(){render()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ const settled=bets.filter(b=>['Win','Lose','Push / Void'].includes(b.result));const total=settled.reduce((s,b)=>s+net(b),0);
+ $('net').textContent=(total<0?'−':'')+peso(Math.abs(total));$('net').style.color=total>0?'#087443':total<0?'#b42332':'#172033';
+ $('staked').textContent=peso(settled.reduce((s,b)=>s+Number(b.stake),0));$('wl').textContent=settled.filter(b=>b.result==='Win').length+' / '+settled.filter(b=>b.result==='Lose').length;$('today').textContent=bets.filter(b=>b.date===localDate).length;
+ const date=$('filter').value;const list=bets.filter(b=>!date||b.date===date).slice().reverse();
+ $('rows').innerHTML=list.length?list.map(b=>`<tr><td>${esc(b.date)}</td><td><strong>${esc(b.game)}</strong>${b.notes?'<div class="muted">'+esc(b.notes)+'</div>':''}</td><td>${esc(b.type)}<div class="muted">${esc(b.pick||'—')}${b.odds?' · Odds '+esc(b.odds):''}</div></td><td>${peso(b.stake)}</td><td class="${b.result==='Win'?'win':b.result==='Lose'?'lose':'pending'}">${esc(b.result)}</td><td class="${net(b)>0?'win':net(b)<0?'lose':''}">${b.result==='Pending'?'—':(net(b)<0?'−':net(b)>0?'+':'')+peso(Math.abs(net(b)))}</td><td><div class="actions" style="margin:0"><button type="button" class="secondary" data-edit="${esc(b.id)}">Edit</button><button type="button" class="danger" data-del="${esc(b.id)}">Delete</button></div></td></tr>`).join(''):'<tr><td colspan="7" class="muted">No bets for this date.</td></tr>';
+ document.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=()=>startEdit(btn.dataset.edit));
+ document.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{const target=bets.find(x=>x.id===btn.dataset.del);if(!target)return;if(confirm('Delete this bet?\n\n'+target.game+' — '+target.date+'\nThis cannot be undone unless you have a CSV backup.')){const {error}=await supabaseClient.from('bets').delete().eq('id',target.id);if(error){alert('Could not delete: '+error.message);return}if(editingId===btn.dataset.del)cancelEdit();await loadBets()}});
+}
+function resetBetForm(){ $('betForm').reset();$('date').value=localDate;$('result').value='Pending';editingId=null;updatePayout();$('formTitle').textContent='Add a bet';$('saveBetBtn').textContent='Save bet';$('cancelEdit').hidden=true }
+function cancelEdit(){resetBetForm()}
+function startEdit(id){const b=bets.find(x=>x.id===id);if(!b)return;editingId=id;$('date').value=b.date||localDate;$('game').value=b.game||'';$('type').value=b.type||'Other';$('pick').value=b.pick||'';$('odds').value=b.odds||'';$('stakeInput').value=b.stake;$('result').value=b.result||'Pending';$('payout').value=b.payout??'';$('notes').value=b.notes||'';$('formTitle').textContent='Edit bet';$('saveBetBtn').textContent='Update bet';$('cancelEdit').hidden=false;updatePayout();$('betForm').scrollIntoView({behavior:'smooth',block:'start'})}
+$('cancelEdit').onclick=cancelEdit;
+function updatePayout(){const odds=Number($('odds').value),stake=Number($('stakeInput').value);if(odds>0&&stake>0){$('payout').value=(odds*stake).toFixed(2);$('payoutHint').textContent='Estimated total payout: '+peso(odds*stake)+' (includes your stake).'}else{$('payout').value='';$('payoutHint').textContent='Enter decimal odds and stake to calculate the total payout.'}}
+$('odds').addEventListener('input',updatePayout);$('stakeInput').addEventListener('input',updatePayout);
+$('betForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser){alert('Please log in first.');return}const stake=Number($('stakeInput').value),result=$('result').value,payout=Number($('payout').value||0),odds=Number($('odds').value);if(!(stake>0))return alert('Enter a stake greater than zero.');if(result==='Win'&&(!(odds>0)||payout<=0))return alert('Enter decimal odds greater than zero and a valid stake to calculate payout.');
+ const record={user_id:currentUser.id,bet_date:$('date').value,game:$('game').value.trim(),bet_type:$('type').value,pick:$('pick').value.trim(),odds:odds>0?odds:null,stake,result,payout,notes:$('notes').value.trim()};$('saveBetBtn').disabled=true;
+ let response;if(editingId)response=await supabaseClient.from('bets').update(record).eq('id',editingId);else response=await supabaseClient.from('bets').insert(record);$('saveBetBtn').disabled=false;if(response.error){alert('Could not save bet: '+response.error.message);return}await loadBets();resetBetForm();
+});
+$('filter').addEventListener('change',render);$('showAll').onclick=()=>{$('filter').value='';render()};
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+$('export').onclick=()=>{const cols=['date','game','type','pick','odds','stake','result','payout','notes'];const content=[cols.join(','),...bets.map(b=>cols.map(k=>csvCell(b[k])).join(','))].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'}));a.download='nba-betting-tracker-backup.csv';a.click();URL.revokeObjectURL(a.href)};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const lines=(await f.text()).split(/\r?\n/).filter(Boolean);const parse=line=>{let out=[],cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'&&q){cur+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out};const cols=parse(lines.shift());const imported=lines.map(line=>{const vals=parse(line),b={};cols.forEach((c,i)=>b[c]=vals[i]);return {user_id:currentUser.id,bet_date:b.date,game:b.game,bet_type:b.type||'Other',pick:b.pick||'',odds:b.odds?Number(b.odds):null,stake:Number(b.stake),result:b.result||'Pending',payout:Number(b.payout||0),notes:b.notes||''}}).filter(b=>b.bet_date&&b.game&&b.stake>0);if(confirm('Import '+imported.length+' bets into your cloud account?')){const {error}=await supabaseClient.from('bets').insert(imported);if(error)alert('Import failed: '+error.message);else{await loadBets();alert('Import complete. Check for duplicate rows.')}}}catch(err){alert('Could not read this CSV. Use a backup exported from this tracker.')}e.target.value=''};
+(async()=>{if(SUPABASE_PUBLISHABLE_KEY==='PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE'){showLoggedIn(null);setMessage('Setup needed: replace the publishable-key placeholder in this HTML file before logging in.',true);return}const {data:{session}}=await supabaseClient.auth.getSession();if(session?.user){showLoggedIn(session.user);await loadBets()}else showLoggedIn(null);supabaseClient.auth.onAuthStateChange((_event,session)=>{if(session?.user){showLoggedIn(session.user);loadBets()}else if(currentUser)showLoggedIn(null)})})();
+
+</script>
+</body></html>
