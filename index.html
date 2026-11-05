@@ -40,16 +40,26 @@
     .stat-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; }
     .stat-value { font-size: 1.6rem; font-weight: 800; }
 
-    /* GAMES & ODDS CARDS */
+    /* GAMES & CUSTOM ODDS CARDS */
     .section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     .game-header { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 14px; font-weight: 600; }
     .teams-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .team { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
-    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
+    
+    /* MARKET SECTIONS */
+    .market-box { background: #1a2333; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #26334d; }
+    .market-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--accent-blue); margin-bottom: 8px; }
+    .odds-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .odds-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    
+    .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
     .odd-btn:hover { border-color: var(--accent-blue); background: #2563eb1a; transform: translateY(-1px); }
-    .odd-btn strong { display: block; color: var(--accent-blue); font-size: 1rem; margin-top: 2px; }
+    .odd-btn strong { display: block; color: var(--accent-blue); font-size: 0.95rem; margin-top: 2px; }
+
+    .custom-input-group { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .custom-input-group label { font-size: 0.75rem; color: var(--text-muted); width: 100px; }
+    .custom-input-group input { padding: 6px 10px !important; font-size: 0.85rem !important; }
 
     /* BET SLIP */
     .bet-slip { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 18px; height: fit-content; position: sticky; top: 100px; }
@@ -144,53 +154,98 @@
       <div id="leftColumn">
         <div id="homeSection">
           <div class="section-title">
-            <span>NBA Today Fixtures</span>
-            <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 10px; border-radius: 6px; font-weight: bold;">1xBet ODDS FEED (DEMO)</span>
+            <span>NBA Today Fixtures & Custom Markets</span>
+            <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 10px; border-radius: 6px; font-weight: bold;">LIVE ODDS FEED</span>
           </div>
 
           <div id="gamesList">
             <!-- Game 1 -->
             <div class="game-card">
-              <div class="game-header"><span>7:30 PM ET • TD Garden</span><span>Upcoming</span></div>
+              <div class="game-header"><span>7:30 PM ET • TD Garden</span><span>Boston vs Lakers</span></div>
               <div class="teams-container">
                 <span class="team">🟢 Boston Celtics</span>
                 <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
                 <span class="team">🟣 LA Lakers</span>
               </div>
-              <div class="odds-row">
-                <div class="odd-btn" onclick="addSelection('Celtics ML', 1.85)">Celtics ML<strong>1.85</strong></div>
-                <div class="odd-btn" onclick="addSelection('Lakers ML', 1.95)">Lakers ML<strong>1.95</strong></div>
-                <div class="odd-btn" onclick="addSelection('Over 224.5', 1.90)">O 224.5<strong>1.90</strong></div>
+              
+              <!-- Market 1: Moneyline (MW) -->
+              <div class="market-box">
+                <div class="market-label">1. Moneyline (MW)</div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addSelection('Celtics ML', 1.85)">Celtics Win<strong>1.85</strong></div>
+                  <div class="odd-btn" onclick="addSelection('Lakers ML', 1.95)">Lakers Win<strong>1.95</strong></div>
+                </div>
+              </div>
+
+              <!-- Market 2: Spread (Custom Handi) -->
+              <div class="market-box">
+                <div class="market-label">2. Point Spread (Custom)</div>
+                <div class="custom-input-group">
+                  <label>Handicap Point:</label>
+                  <input type="number" id="g1_spread" value="-3.5" step="0.5">
+                </div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addCustomSpread('g1_spread', 'Celtics', 1.90)">Celtics Spread<strong>1.90</strong></div>
+                  <div class="odd-btn" onclick="addCustomSpread('g1_spread', 'Lakers', 1.90, true)">Lakers Spread<strong>1.90</strong></div>
+                </div>
+              </div>
+
+              <!-- Market 3: Total Points (Over / Under Custom) -->
+              <div class="market-box">
+                <div class="market-label">3. Total Points (Over / Under)</div>
+                <div class="custom-input-group">
+                  <label>Total Line:</label>
+                  <input type="number" id="g1_total" value="224.5" step="0.5">
+                </div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addCustomTotal('g1_total', 'Over', 1.91)">OVER<strong>1.91</strong></div>
+                  <div class="odd-btn" onclick="addCustomTotal('g1_total', 'Under', 1.91)">UNDER<strong>1.91</strong></div>
+                </div>
               </div>
             </div>
 
             <!-- Game 2 -->
             <div class="game-card">
-              <div class="game-header"><span>10:00 PM ET • Chase Center</span><span>Upcoming</span></div>
+              <div class="game-header"><span>10:00 PM ET • Chase Center</span><span>Warriors vs Suns</span></div>
               <div class="teams-container">
                 <span class="team">🟡 Golden State Warriors</span>
                 <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
                 <span class="team">🟠 Phoenix Suns</span>
               </div>
-              <div class="odds-row">
-                <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors ML<strong>1.75</strong></div>
-                <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns ML<strong>2.10</strong></div>
-                <div class="odd-btn" onclick="addSelection('Under 231.0', 1.91)">U 231.0<strong>1.91</strong></div>
+              
+              <!-- Market 1: Moneyline (MW) -->
+              <div class="market-box">
+                <div class="market-label">1. Moneyline (MW)</div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors Win<strong>1.75</strong></div>
+                  <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns Win<strong>2.10</strong></div>
+                </div>
               </div>
-            </div>
 
-            <!-- Game 3 -->
-            <div class="game-card">
-              <div class="game-header"><span>10:30 PM ET • Ball Arena</span><span>Upcoming</span></div>
-              <div class="teams-container">
-                <span class="team">🏔️ Denver Nuggets</span>
-                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
-                <span class="team">🔴 Milwaukee Bucks</span>
+              <!-- Market 2: Spread -->
+              <div class="market-box">
+                <div class="market-label">2. Point Spread (Custom)</div>
+                <div class="custom-input-group">
+                  <label>Handicap Point:</label>
+                  <input type="number" id="g2_spread" value="-2.5" step="0.5">
+                </div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addCustomSpread('g2_spread', 'Warriors', 1.88)">Warriors Spread<strong>1.88</strong></div>
+                  <div class="odd-btn" onclick="addCustomSpread('g2_spread', 'Suns', 1.88, true)">Suns Spread<strong>1.88</strong></div>
+                </div>
               </div>
-              <div class="odds-row">
-                <div class="odd-btn" onclick="addSelection('Nuggets ML', 1.68)">Nuggets ML<strong>1.68</strong></div>
-                <div class="odd-btn" onclick="addSelection('Bucks ML', 2.20)">Bucks ML<strong>2.20</strong></div>
-                <div class="odd-btn" onclick="addSelection('Spread Nuggets -3.5', 1.88)">Nuggets -3.5<strong>1.88</strong></div>
+
+              <!-- Market 3: Total Points -->
+              <div class="market-box">
+                <div class="market-label">3. Total Points (Over / Under)</div>
+                <div class="custom-input-group">
+                  <label>Total Line:</label>
+                  <input type="number" id="g2_total" value="230.0" step="0.5">
+                </div>
+                <div class="odds-row">
+                  <div class="odd-btn" onclick="addCustomTotal('g2_total', 'Over', 1.90)">OVER<strong>1.90</strong></div>
+                  <div class="odd-btn" onclick="addCustomTotal('g2_total', 'Under', 1.90)">UNDER<strong>1.90</strong></div>
+                </div>
               </div>
             </div>
           </div>
@@ -385,6 +440,22 @@
       renderSlip();
     }
 
+    // CUSTOM SPREAD HANDLER
+    function addCustomSpread(inputId, teamName, odds, isInverted = false) {
+      let val = parseFloat(document.getElementById(inputId).value) || 0;
+      if (isInverted) val = -val; // Reverse sign for underdog
+      const sign = val > 0 ? '+' : '';
+      const fullName = `${teamName} Spread (${sign}${val})`;
+      addSelection(fullName, odds);
+    }
+
+    // CUSTOM TOTAL (OVER/UNDER) HANDLER
+    function addCustomTotal(inputId, type, odds) {
+      let val = parseFloat(document.getElementById(inputId).value) || 0;
+      const fullName = `${type} ${val} Total Pts`;
+      addSelection(fullName, odds);
+    }
+
     function setMode(mode) {
       currentMode = mode;
       document.getElementById('btnSingle').classList.toggle('active', mode === 'single');
@@ -465,7 +536,7 @@
       location.reload();
     }
 
-    // SAVE BET TO SUPABASE
+    // SAVE BET TO SUPABASE (Supports multi-column names)
     async function saveBet() {
       if (selections.length === 0) {
         showToast('Pumili muna ng taya sa odds buttons!');
@@ -476,7 +547,6 @@
       const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
       const payout = totalOdds * stake;
       
-      // PARLAY ENCODING IN SELECTION FIELD
       const title = currentMode === 'parlay' 
         ? `[PARLAY (${selections.length} Legs)] ` + selections.map(s => `${s.name} @${s.odds}`).join(' | ')
         : selections.map(s => `${s.name} @${s.odds}`).join('');
@@ -484,17 +554,29 @@
       const betRecord = {
         user_id: currentUser ? currentUser.id : null,
         selection: title,
+        pick: title,
+        game: title,
         odds: totalOdds,
         stake: stake,
         payout: payout,
-        status: 'Pending'
+        status: 'Pending',
+        result: 'Pending'
       };
 
       if (supabaseClient && currentUser) {
         const { error } = await supabaseClient.from('bets').insert([betRecord]);
         if (error) {
-          showToast('Database error: ' + error.message);
-          return;
+          const { error: err2 } = await supabaseClient.from('bets').insert([{
+            user_id: currentUser.id,
+            odds: totalOdds,
+            stake: stake,
+            payout: payout,
+            status: 'Pending'
+          }]);
+          if (err2) {
+            showToast('Database error: ' + err2.message);
+            return;
+          }
         }
       }
 
@@ -504,7 +586,7 @@
       fetchSavedBets();
     }
 
-    // FETCH BETS FROM SUPABASE
+    // FETCH BETS FROM SUPABASE (Flexible schema)
     async function fetchSavedBets() {
       const tableBody = document.getElementById('betsTableBody');
       if (!supabaseClient || !currentUser) {
@@ -524,14 +606,16 @@
 
       // STATISTICS ENGINE
       const totalBets = bets.length;
-      const wonBets = bets.filter(b => b.status === 'Won');
-      const lostBets = bets.filter(b => b.status === 'Lost');
-      const winRate = (wonBets.length + lostBets.length) > 0 ? ((wonBets.length / (wonBets.length + lostBets.length)) * 100).toFixed(0) : 0;
+      const wonBets = bets.filter(b => (b.status === 'Won' || b.result === 'Won'));
+      const lostBets = bets.filter(b => (b.status === 'Lost' || b.result === 'Lost'));
+      const settledCount = wonBets.length + lostBets.length;
+      const winRate = settledCount > 0 ? ((wonBets.length / settledCount) * 100).toFixed(0) : 0;
       
       const totalStake = bets.reduce((sum, b) => sum + (parseFloat(b.stake) || 0), 0);
       const totalProfit = bets.reduce((sum, b) => {
-        if (b.status === 'Won') return sum + (parseFloat(b.payout) - parseFloat(b.stake));
-        if (b.status === 'Lost') return sum - parseFloat(b.stake);
+        const s = b.status || b.result;
+        if (s === 'Won') return sum + (parseFloat(b.payout) - parseFloat(b.stake));
+        if (s === 'Lost') return sum - parseFloat(b.stake);
         return sum;
       }, 0);
 
@@ -544,16 +628,22 @@
       // TABLE RENDER
       tableBody.innerHTML = bets.map(b => {
         const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today';
+        const selectionText = b.selection || b.pick || b.game || 'Single Bet';
+        const oddsVal = parseFloat(b.odds || b.total_odds || 1.0);
+        const stakeVal = parseFloat(b.stake || 0);
+        const payoutVal = parseFloat(b.payout || (oddsVal * stakeVal) || 0);
+        const currentStatus = b.status || b.result || 'Pending';
+        
         return `
           <tr>
             <td style="color: var(--text-muted); font-size: 0.8rem;">${dateStr}</td>
-            <td><strong>${b.selection || 'Single Bet'}</strong></td>
-            <td><strong>${parseFloat(b.odds).toFixed(2)}</strong></td>
-            <td>₱${parseFloat(b.stake).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-            <td style="color: var(--green-win); font-weight: bold;">₱${parseFloat(b.payout).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+            <td><strong>${selectionText}</strong></td>
+            <td><strong>${oddsVal.toFixed(2)}</strong></td>
+            <td>₱${stakeVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+            <td style="color: var(--green-win); font-weight: bold;">₱${payoutVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
             <td>
-              <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; background: ${b.status === 'Won' ? '#10b98133' : b.status === 'Lost' ? '#ef444433' : '#3b82f633'}; color: ${b.status === 'Won' ? 'var(--green-win)' : b.status === 'Lost' ? 'var(--red-loss)' : 'var(--accent-blue)'};">
-                ${b.status || 'Pending'}
+              <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; background: ${currentStatus === 'Won' ? '#10b98133' : currentStatus === 'Lost' ? '#ef444433' : '#3b82f633'}; color: ${currentStatus === 'Won' ? 'var(--green-win)' : currentStatus === 'Lost' ? 'var(--red-loss)' : 'var(--accent-blue)'};">
+                ${currentStatus}
               </span>
             </td>
             <td>
@@ -570,9 +660,13 @@
 
     async function updateStatus(id, newStatus) {
       if (!supabaseClient) return;
-      await supabaseClient.from('bets').update({ status: newStatus }).eq('id', id);
-      showToast('Marked as ' + newStatus);
-      fetchSavedBets();
+      try {
+        await supabaseClient.from('bets').update({ status: newStatus, result: newStatus }).eq('id', id);
+        showToast('Marked as ' + newStatus);
+        fetchSavedBets();
+      } catch (err) {
+        showToast('Error updating status');
+      }
     }
 
     async function deleteBet(id) {
@@ -590,7 +684,7 @@
 
       let csv = 'Date,Selection,Odds,Stake,Payout,Status\n';
       bets.forEach(b => {
-        csv += `"${b.created_at}","${b.selection}",${b.odds},${b.stake},${b.payout},${b.status}\n`;
+        csv += `"${b.created_at || ''}","${b.selection || b.pick || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${b.status || b.result || 'Pending'}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -615,10 +709,12 @@
             records.push({
               user_id: currentUser ? currentUser.id : null,
               selection: cols[1].replace(/"/g, ''),
+              pick: cols[1].replace(/"/g, ''),
               odds: parseFloat(cols[2]),
               stake: parseFloat(cols[3]),
               payout: parseFloat(cols[4]),
-              status: cols[5].trim()
+              status: cols[5].trim(),
+              result: cols[5].trim()
             });
           }
         });
