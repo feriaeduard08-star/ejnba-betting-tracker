@@ -371,7 +371,6 @@
     let selections = [];
     let currentMode = 'single';
 
-    // Local in-memory status tracker para sa Won/Lost kahit walang status column sa DB
     let localBetStatuses = JSON.parse(localStorage.getItem('local_bet_statuses') || '{}');
 
     function initSupabase() {
@@ -536,7 +535,7 @@
       location.reload();
     }
 
-    // SAVE BET TO SUPABASE (Naka-base na eksakto sa existing columns para iwas schema error)
+    // SAVE BET TO SUPABASE (Kasama na ang bet_date para hindi mag-error)
     async function saveBet() {
       if (selections.length === 0) {
         showToast('Pumili muna ng taya sa odds buttons!');
@@ -546,17 +545,14 @@
       const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1);
       const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
       const payout = totalOdds * stake;
-      
-      const title = currentMode === 'parlay' 
-        ? `[PARLAY (${selections.length} Legs)] ` + selections.map(s => `${s.name} @${s.odds}`).join(' | ')
-        : selections.map(s => `${s.name} @${s.odds}`).join('');
+      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format para sa bet_date
 
-      // Sinusubukan i-save gamit ang basic schema para hindi mag-error sa missing columns
       const betRecord = {
         user_id: currentUser ? currentUser.id : null,
         odds: totalOdds,
         stake: stake,
-        payout: payout
+        payout: payout,
+        bet_date: todayStr
       };
 
       if (supabaseClient && currentUser) {
@@ -591,7 +587,7 @@
         return;
       }
 
-      // STATISTICS ENGINE (Gumagamit ng local status tracker para sa Won/Lost)
+      // STATISTICS ENGINE
       const totalBets = bets.length;
       let wonCount = 0;
       let lostCount = 0;
@@ -621,7 +617,7 @@
 
       // TABLE RENDER
       tableBody.innerHTML = bets.map(b => {
-        const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today';
+        const dateStr = b.bet_date || (b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today');
         const oddsVal = parseFloat(b.odds || 1.0);
         const stakeVal = parseFloat(b.stake || 0);
         const payoutVal = parseFloat(b.payout || (oddsVal * stakeVal) || 0);
@@ -676,7 +672,7 @@
       let csv = 'Date,Odds,Stake,Payout,Status\n';
       bets.forEach(b => {
         const status = localBetStatuses[b.id] || 'Pending';
-        csv += `"${b.created_at || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${status}\n`;
+        csv += `"${b.bet_date || b.created_at || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${status}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -702,7 +698,8 @@
               user_id: currentUser ? currentUser.id : null,
               odds: parseFloat(cols[1]),
               stake: parseFloat(cols[2]),
-              payout: parseFloat(cols[3])
+              payout: parseFloat(cols[3]),
+              bet_date: new Date().toISOString().slice(0, 10)
             });
           }
         });
