@@ -519,7 +519,7 @@
 
     async function handleSignUp() {
       const email = document.getElementById('authEmail').value;
-      const password = document.getElementById('authPassword').value;
+      const password = document.getElementById('authPassword'].value;
 
       try {
         const { error } = await supabaseClient.auth.signUp({ email, password });
@@ -535,7 +535,7 @@
       location.reload();
     }
 
-    // SAVE BET TO SUPABASE (Kasama na ang bet_date para hindi mag-error)
+    // SAVE BET TO SUPABASE (Strictly nagpapadala lamang ng odds, stake, at payout para iwasan ang lahat ng missing column/null error)
     async function saveBet() {
       if (selections.length === 0) {
         showToast('Pumili muna ng taya sa odds buttons!');
@@ -545,14 +545,11 @@
       const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1);
       const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
       const payout = totalOdds * stake;
-      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format para sa bet_date
 
       const betRecord = {
-        user_id: currentUser ? currentUser.id : null,
         odds: totalOdds,
         stake: stake,
-        payout: payout,
-        bet_date: todayStr
+        payout: payout
       };
 
       if (supabaseClient && currentUser) {
@@ -617,7 +614,7 @@
 
       // TABLE RENDER
       tableBody.innerHTML = bets.map(b => {
-        const dateStr = b.bet_date || (b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today');
+        const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today';
         const oddsVal = parseFloat(b.odds || 1.0);
         const stakeVal = parseFloat(b.stake || 0);
         const payoutVal = parseFloat(b.payout || (oddsVal * stakeVal) || 0);
@@ -672,7 +669,7 @@
       let csv = 'Date,Odds,Stake,Payout,Status\n';
       bets.forEach(b => {
         const status = localBetStatuses[b.id] || 'Pending';
-        csv += `"${b.bet_date || b.created_at || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${status}\n`;
+        csv += `"${b.created_at || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${status}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -695,11 +692,9 @@
           const cols = line.split(',');
           if (cols.length >= 4) {
             records.push({
-              user_id: currentUser ? currentUser.id : null,
               odds: parseFloat(cols[1]),
               stake: parseFloat(cols[2]),
-              payout: parseFloat(cols[3]),
-              bet_date: new Date().toISOString().slice(0, 10)
+              payout: parseFloat(cols[3])
             });
           }
         });
