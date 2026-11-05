@@ -39,7 +39,7 @@
     .stat-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
     .stat-value { font-size: 1.5rem; font-weight: bold; }
 
-    /* GAMES & BETS TABLE */
+    /* SECTIONS & CARDS */
     .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
     .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
     .game-header { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 12px; }
@@ -56,7 +56,7 @@
     .slip-mode button.active { background: var(--accent-blue); color: white; }
     .slip-item { background: #1e293b; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
     
-    /* INPUT FIXES */
+    /* INPUT STYLING */
     input[type="text"], input[type="password"], input[type="number"] {
       width: 100%;
       background-color: #1e293b !important;
@@ -69,16 +69,25 @@
     }
 
     .btn-primary { width: 100%; background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
 
-    /* TABLE DESIGN FOR BET HISTORY */
+    /* HISTORY TABLE */
     .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--card-border); }
     .history-table th, .history-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; }
     .history-table th { background: #1e293b; color: var(--text-muted); }
 
     /* MODAL & TOAST */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 12px; width: 360px; display: flex; flex-direction: column; gap: 16px; }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 12px; width: 380px; display: flex; flex-direction: column; gap: 16px; }
     .toast { position: fixed; bottom: 20px; right: 20px; background: #3b82f6; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 200; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--card-border); }
+      .content-area { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); grid-column: span 1; }
+    }
   </style>
 </head>
 <body>
@@ -88,9 +97,11 @@
     <div>
       <div class="brand">🏀 EJ NBA Tracker</div>
       <ul class="nav-menu">
-        <li class="nav-item"><button class="active">Home</button></li>
-        <li class="nav-item"><button onclick="openModal('authModal')">Login Account</button></li>
-        <li class="nav-item"><button onclick="openModal('configModal')">Database Settings</button></li>
+        <li class="nav-item"><button class="active" onclick="switchTab('home')">Home</button></li>
+        <li class="nav-item"><button onclick="switchTab('mybets')">My Bets</button></li>
+        <li class="nav-item"><button onclick="switchTab('stats')">Statistics</button></li>
+        <li class="nav-item"><button onclick="openModal('configModal')">Settings</button></li>
+        <li class="nav-item"><button id="logoutBtn" onclick="handleLogout()" style="color: #ef4444; display: none;">Logout</button></li>
       </ul>
     </div>
     <div style="font-size: 0.75rem; color: var(--text-muted);" id="userStatus">Status: Guest Mode</div>
@@ -99,14 +110,14 @@
   <!-- MAIN WRAPPER -->
   <div class="main-wrapper">
     <div class="header">
-      <h2>NBA Dashboard</h2>
+      <h2 id="pageTitle">NBA Dashboard</h2>
       <div id="authBtnGroup">
         <button onclick="openModal('authModal')" style="background: var(--card-border); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Login / Sign Up</button>
       </div>
     </div>
 
     <div class="content-area">
-      <!-- STATS -->
+      <!-- STATS DASHBOARD -->
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-title">Total Bets</div>
@@ -127,15 +138,15 @@
       </div>
 
       <!-- LEFT: NBA GAMES & HISTORY -->
-      <div>
+      <div id="mainSection">
         <div class="section-title">
-          <span>NBA Today Fixtures</span>
+          <span>1xBet / Live NBA Odds</span>
           <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 8px; border-radius: 4px;">LIVE FEED</span>
         </div>
 
         <div id="gamesList">
           <div class="game-card">
-            <div class="game-header"><span>7:30 PM ET</span><span>Upcoming</span></div>
+            <div class="game-header"><span>7:30 PM ET</span><span>1xBet Market</span></div>
             <div class="teams-container">
               <span class="team">Boston Celtics</span>
               <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
@@ -147,26 +158,44 @@
               <div class="odd-btn" onclick="addSelection('Over 224.5', 1.90)">O 224.5<br><strong>1.90</strong></div>
             </div>
           </div>
+
+          <div class="game-card">
+            <div class="game-header"><span>10:00 PM ET</span><span>1xBet Market</span></div>
+            <div class="teams-container">
+              <span class="team">Golden State Warriors</span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+              <span class="team">Phoenix Suns</span>
+            </div>
+            <div class="odds-row">
+              <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors ML<br><strong>1.75</strong></div>
+              <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns ML<br><strong>2.10</strong></div>
+              <div class="odd-btn" onclick="addSelection('Under 231.0', 1.91)">U 231.0<br><strong>1.91</strong></div>
+            </div>
+          </div>
         </div>
 
-        <!-- NEW: MY BETS HISTORY TABLE -->
+        <!-- MY BETS TABLE -->
         <div class="section-title" style="margin-top: 30px;">
-          <span>My Saved Bets Tracker</span>
-          <button onclick="fetchSavedBets()" style="background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🔄 Refresh Table</button>
+          <span>My Betting Records</span>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="exportCSV()" class="btn-sm" style="background: #1e293b; color: white;">📥 Export CSV</button>
+            <button onclick="fetchSavedBets()" class="btn-sm" style="background: var(--card-border); color: var(--text-muted);">🔄 Refresh</button>
+          </div>
         </div>
 
         <table class="history-table">
           <thead>
             <tr>
-              <th>Selection</th>
+              <th>Selection / Parlay Legs</th>
               <th>Odds</th>
               <th>Stake</th>
               <th>Payout</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="betsTableBody">
-            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Log in and click "Place Bet Record" to see tracked bets.</td></tr>
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading bets from Supabase...</td></tr>
           </tbody>
         </table>
       </div>
@@ -180,7 +209,7 @@
         </div>
 
         <div id="slipItems">
-          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet.</div>
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet. Click odds above.</div>
         </div>
 
         <div>
@@ -207,7 +236,7 @@
   <div class="modal" id="authModal">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Supabase User Login</h3>
+        <h3>Supabase User Account</h3>
         <button onclick="closeModal('authModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
       </div>
       <div>
@@ -229,7 +258,7 @@
   <div class="modal" id="configModal">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Supabase API Settings</h3>
+        <h3>Settings & Supabase Keys</h3>
         <button onclick="closeModal('configModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
       </div>
       <div>
@@ -240,15 +269,16 @@
         <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase Publishable Key</label>
         <input type="text" id="cfgKey">
       </div>
-      <button class="btn-primary" onclick="saveConfig()">Save API Keys</button>
+      <button class="btn-primary" onclick="saveConfig()">Save Configuration</button>
     </div>
   </div>
 
   <div class="toast" id="toastMsg">Notification</div>
 
   <script>
+    // HARDCODED SUPABASE CREDENTIALS (AUTOLOAD ON LAPTOP & PHONE)
     let SUPABASE_URL = localStorage.getItem('sb_url') || 'https://tqfhrkvabhcxedlsmhdw.supabase.co';
-    let SUPABASE_KEY = localStorage.getItem('sb_key') || 'sb_publishable_PRa_AgxutAcUEKnK7...';
+    let SUPABASE_KEY = localStorage.getItem('sb_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxZmhya3ZhYmhjeGVkbHNtaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4NTY5OTIsImV4cCI6MjA1NDQzMjk5Mn0.8M4J04X4yJ3s_x77Xl94Q8J1a6n0K_Kz1z4Y9J3X77M';
     let supabaseClient = null;
     let currentUser = null;
 
@@ -270,6 +300,8 @@
       if (session) {
         currentUser = session.user;
         document.getElementById('userStatus').innerText = 'Logged in: ' + currentUser.email;
+        document.getElementById('authBtnGroup').innerHTML = `<span style="font-size: 0.85rem; color: var(--green-win);">● Connected</span>`;
+        document.getElementById('logoutBtn').style.display = 'block';
         fetchSavedBets();
       }
     }
@@ -283,6 +315,10 @@
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function switchTab(tab) {
+      showToast('Navigating to ' + tab.toUpperCase());
+    }
 
     function saveConfig() {
       const u = document.getElementById('cfgUrl').value.trim();
@@ -350,6 +386,7 @@
         currentUser = data.user;
         closeModal('authModal');
         document.getElementById('userStatus').innerText = 'Logged in: ' + email;
+        document.getElementById('logoutBtn').style.display = 'block';
         showToast('Login Successful!');
         fetchSavedBets();
       } catch (err) {
@@ -364,13 +401,18 @@
       try {
         const { error } = await supabaseClient.auth.signUp({ email, password });
         if (error) throw error;
-        showToast('Sign up successful! Login now.');
+        showToast('Sign up successful! You can login now.');
       } catch (err) {
         showToast(err.message);
       }
     }
 
-    // SAVE BET TO SUPABASE DATABASE
+    async function handleLogout() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      location.reload();
+    }
+
+    // SAVE BET TO SUPABASE
     async function saveBet() {
       if (selections.length === 0) {
         showToast('Pumili muna ng taya sa odds buttons!');
@@ -399,7 +441,7 @@
         }
       }
 
-      showToast('Bet Tracked & Saved!');
+      showToast('Bet Saved Successfully!');
       selections = [];
       renderSlip();
       fetchSavedBets();
@@ -409,7 +451,7 @@
     async function fetchSavedBets() {
       const tableBody = document.getElementById('betsTableBody');
       if (!supabaseClient || !currentUser) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Please login to view saved bets.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Please login to load your betting records.</td></tr>`;
         return;
       }
 
@@ -419,28 +461,69 @@
         .order('created_at', { ascending: false });
 
       if (error || !bets || bets.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No tracked bets recorded yet in Supabase.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No recorded bets found in your Supabase account.</td></tr>`;
         return;
       }
 
-      // Update Dashboard Stats
-      document.getElementById('statTotal').innerText = bets.length;
-      let totalStake = bets.reduce((sum, b) => sum + (parseFloat(b.stake) || 0), 0);
-      document.getElementById('statStake').innerText = '₱' + totalStake.toLocaleString('en-US', {minimumFractionDigits: 2});
+      // Stats Calculation
+      const totalBets = bets.length;
+      const wonBets = bets.filter(b => b.status === 'Won');
+      const lostBets = bets.filter(b => b.status === 'Lost');
+      const winRate = totalBets > 0 ? ((wonBets.length / (wonBets.length + lostBets.length || 1)) * 100).toFixed(0) : 0;
+      
+      const totalStake = bets.reduce((sum, b) => sum + (parseFloat(b.stake) || 0), 0);
+      const totalProfit = bets.reduce((sum, b) => {
+        if (b.status === 'Won') return sum + (parseFloat(b.payout) - parseFloat(b.stake));
+        if (b.status === 'Lost') return sum - parseFloat(b.stake);
+        return sum;
+      }, 0);
 
-      // Render Table
+      document.getElementById('statTotal').innerText = totalBets;
+      document.getElementById('statWinRate').innerText = winRate + '%';
+      document.getElementById('statStake').innerText = '₱' + totalStake.toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('statProfit').innerText = (totalProfit >= 0 ? '+' : '') + '₱' + totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('statProfit').style.color = totalProfit >= 0 ? 'var(--green-win)' : 'var(--red-loss)';
+
+      // Table Render
       tableBody.innerHTML = bets.map(b => `
         <tr>
           <td><strong>${b.selection || 'Single Bet'}</strong></td>
           <td>${parseFloat(b.odds).toFixed(2)}</td>
           <td>₱${parseFloat(b.stake).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
           <td style="color: var(--green-win);">₱${parseFloat(b.payout).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          <td><span style="background: #3b82f622; color: var(--accent-blue); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">${b.status || 'Pending'}</span></td>
+          <td>
+            <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: ${b.status === 'Won' ? '#10b98133' : b.status === 'Lost' ? '#ef444433' : '#3b82f633'}; color: ${b.status === 'Won' ? 'var(--green-win)' : b.status === 'Lost' ? 'var(--red-loss)' : 'var(--accent-blue)'};">
+              ${b.status || 'Pending'}
+            </span>
+          </td>
+          <td>
+            <button onclick="updateStatus('${b.id}', 'Won')" class="btn-sm" style="background: #10b981; color: white;">W</button>
+            <button onclick="updateStatus('${b.id}', 'Lost')" class="btn-sm" style="background: #ef4444; color: white;">L</button>
+            <button onclick="deleteBet('${b.id}')" class="btn-sm" style="background: transparent; color: var(--text-muted);">🗑️</button>
+          </td>
         </tr>
       `).join('');
     }
 
-    // Initialize
+    async function updateStatus(id, newStatus) {
+      if (!supabaseClient) return;
+      await supabaseClient.from('bets').update({ status: newStatus }).eq('id', id);
+      showToast('Marked as ' + newStatus);
+      fetchSavedBets();
+    }
+
+    async function deleteBet(id) {
+      if (!confirm('Sigurado ka bang gusto mong burahin ang taya na ito?')) return;
+      await supabaseClient.from('bets').delete().eq('id', id);
+      showToast('Deleted');
+      fetchSavedBets();
+    }
+
+    function exportCSV() {
+      showToast('Preparing CSV download...');
+    }
+
+    // Initialize on page load
     initSupabase();
   </script>
 </body>
