@@ -51,7 +51,6 @@
     .market-box { background: #1a2333; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #26334d; }
     .market-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--accent-blue); margin-bottom: 8px; }
     .odds-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .odds-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     
     .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
     .odd-btn:hover { border-color: var(--accent-blue); background: #2563eb1a; transform: translateY(-1px); }
@@ -372,6 +371,9 @@
     let selections = [];
     let currentMode = 'single';
 
+    // Local in-memory status tracker para sa Won/Lost kahit walang status column sa DB
+    let localBetStatuses = JSON.parse(localStorage.getItem('local_bet_statuses') || '{}');
+
     function initSupabase() {
       if (SUPABASE_URL && SUPABASE_KEY) {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -440,16 +442,14 @@
       renderSlip();
     }
 
-    // CUSTOM SPREAD HANDLER
     function addCustomSpread(inputId, teamName, odds, isInverted = false) {
       let val = parseFloat(document.getElementById(inputId).value) || 0;
-      if (isInverted) val = -val; // Reverse sign for underdog
+      if (isInverted) val = -val;
       const sign = val > 0 ? '+' : '';
       const fullName = `${teamName} Spread (${sign}${val})`;
       addSelection(fullName, odds);
     }
 
-    // CUSTOM TOTAL (OVER/UNDER) HANDLER
     function addCustomTotal(inputId, type, odds) {
       let val = parseFloat(document.getElementById(inputId).value) || 0;
       const fullName = `${type} ${val} Total Pts`;
@@ -536,7 +536,7 @@
       location.reload();
     }
 
-    // SAVE BET TO SUPABASE (Supports multi-column names)
+    // SAVE BET TO SUPABASE (Naka-base na eksakto sa existing columns para iwas schema error)
     async function saveBet() {
       if (selections.length === 0) {
         showToast('Pumili muna ng taya sa odds buttons!');
@@ -551,32 +551,19 @@
         ? `[PARLAY (${selections.length} Legs)] ` + selections.map(s => `${s.name} @${s.odds}`).join(' | ')
         : selections.map(s => `${s.name} @${s.odds}`).join('');
 
+      // Sinusubukan i-save gamit ang basic schema para hindi mag-error sa missing columns
       const betRecord = {
         user_id: currentUser ? currentUser.id : null,
-        selection: title,
-        pick: title,
-        game: title,
         odds: totalOdds,
         stake: stake,
-        payout: payout,
-        status: 'Pending',
-        result: 'Pending'
+        payout: payout
       };
 
       if (supabaseClient && currentUser) {
         const { error } = await supabaseClient.from('bets').insert([betRecord]);
         if (error) {
-          const { error: err2 } = await supabaseClient.from('bets').insert([{
-            user_id: currentUser.id,
-            odds: totalOdds,
-            stake: stake,
-            payout: payout,
-            status: 'Pending'
-          }]);
-          if (err2) {
-            showToast('Database error: ' + err2.message);
-            return;
-          }
+          showToast('Database error: ' + error.message);
+          return;
         }
       }
 
@@ -586,7 +573,7 @@
       fetchSavedBets();
     }
 
-    // FETCH BETS FROM SUPABASE (Flexible schema)
+    // FETCH BETS FROM SUPABASE
     async function fetchSavedBets() {
       const tableBody = document.getElementById('betsTableBody');
       if (!supabaseClient || !currentUser) {
@@ -604,18 +591,25 @@
         return;
       }
 
-      // STATISTICS ENGINE
+      // STATISTICS ENGINE (Gumagamit ng local status tracker para sa Won/Lost)
       const totalBets = bets.length;
-      const wonBets = bets.filter(b => (b.status === 'Won' || b.result === 'Won'));
-      const lostBets = bets.filter(b => (b.status === 'Lost' || b.result === 'Lost'));
-      const settledCount = wonBets.length + lostBets.length;
-      const winRate = settledCount > 0 ? ((wonBets.length / settledCount) * 100).toFixed(0) : 0;
+      let wonCount = 0;
+      let lostCount = 0;
+      
+      bets.forEach(b => {
+        const status = localBetStatuses[b.id] || 'Pending';
+        if (status === 'Won') wonCount++;
+        if (status === 'Lost') lostCount++;
+      });
+
+      const settledCount = wonCount + lostCount;
+      const winRate = settledCount > 0 ? ((wonCount / settledCount) * 100).toFixed(0) : 0;
       
       const totalStake = bets.reduce((sum, b) => sum + (parseFloat(b.stake) || 0), 0);
       const totalProfit = bets.reduce((sum, b) => {
-        const s = b.status || b.result;
-        if (s === 'Won') return sum + (parseFloat(b.payout) - parseFloat(b.stake));
-        if (s === 'Lost') return sum - parseFloat(b.stake);
+        const status = localBetStatuses[b.id] || 'Pending';
+        if (status === 'Won') return sum + (parseFloat(b.payout) - parseFloat(b.stake));
+        if (status === 'Lost') return sum - parseFloat(b.stake);
         return sum;
       }, 0);
 
@@ -628,16 +622,15 @@
       // TABLE RENDER
       tableBody.innerHTML = bets.map(b => {
         const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today';
-        const selectionText = b.selection || b.pick || b.game || 'Single Bet';
-        const oddsVal = parseFloat(b.odds || b.total_odds || 1.0);
+        const oddsVal = parseFloat(b.odds || 1.0);
         const stakeVal = parseFloat(b.stake || 0);
         const payoutVal = parseFloat(b.payout || (oddsVal * stakeVal) || 0);
-        const currentStatus = b.status || b.result || 'Pending';
+        const currentStatus = localBetStatuses[b.id] || 'Pending';
         
         return `
           <tr>
             <td style="color: var(--text-muted); font-size: 0.8rem;">${dateStr}</td>
-            <td><strong>${selectionText}</strong></td>
+            <td><strong>Single / Parlay Bet</strong></td>
             <td><strong>${oddsVal.toFixed(2)}</strong></td>
             <td>₱${stakeVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
             <td style="color: var(--green-win); font-weight: bold;">₱${payoutVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
@@ -658,20 +651,18 @@
       }).join('');
     }
 
-    async function updateStatus(id, newStatus) {
-      if (!supabaseClient) return;
-      try {
-        await supabaseClient.from('bets').update({ status: newStatus, result: newStatus }).eq('id', id);
-        showToast('Marked as ' + newStatus);
-        fetchSavedBets();
-      } catch (err) {
-        showToast('Error updating status');
-      }
+    function updateStatus(id, newStatus) {
+      localBetStatuses[id] = newStatus;
+      localStorage.setItem('local_bet_statuses', JSON.stringify(localBetStatuses));
+      showToast('Marked as ' + newStatus);
+      fetchSavedBets();
     }
 
     async function deleteBet(id) {
       if (!confirm('Sigurado ka bang gusto mong burahin ang taya na ito?')) return;
       await supabaseClient.from('bets').delete().eq('id', id);
+      delete localBetStatuses[id];
+      localStorage.setItem('local_bet_statuses', JSON.stringify(localBetStatuses));
       showToast('Deleted');
       fetchSavedBets();
     }
@@ -682,9 +673,10 @@
       const { data: bets } = await supabaseClient.from('bets').select('*');
       if (!bets || bets.length === 0) return showToast('No data to export');
 
-      let csv = 'Date,Selection,Odds,Stake,Payout,Status\n';
+      let csv = 'Date,Odds,Stake,Payout,Status\n';
       bets.forEach(b => {
-        csv += `"${b.created_at || ''}","${b.selection || b.pick || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${b.status || b.result || 'Pending'}\n`;
+        const status = localBetStatuses[b.id] || 'Pending';
+        csv += `"${b.created_at || ''}",${b.odds || 1},${b.stake || 0},${b.payout || 0},${status}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -705,16 +697,12 @@
         let records = [];
         lines.forEach(line => {
           const cols = line.split(',');
-          if (cols.length >= 6) {
+          if (cols.length >= 4) {
             records.push({
               user_id: currentUser ? currentUser.id : null,
-              selection: cols[1].replace(/"/g, ''),
-              pick: cols[1].replace(/"/g, ''),
-              odds: parseFloat(cols[2]),
-              stake: parseFloat(cols[3]),
-              payout: parseFloat(cols[4]),
-              status: cols[5].trim(),
-              result: cols[5].trim()
+              odds: parseFloat(cols[1]),
+              stake: parseFloat(cols[2]),
+              payout: parseFloat(cols[3])
             });
           }
         });
