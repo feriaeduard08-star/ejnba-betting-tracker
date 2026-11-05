@@ -1,1528 +1,386 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EJ NBA Betting Tracker | 1xBet Live Sportsbook Dashboard</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        navy: {
-                            900: '#070a12',
-                            800: '#0b0f19',
-                            700: '#111827',
-                            600: '#161e2e',
-                            500: '#1f293d',
-                            400: '#2a374e',
-                        },
-                        brand: {
-                            blue: '#3b82f6',
-                            hover: '#2563eb',
-                            cyan: '#06b6d4',
-                            accent: '#60a5fa',
-                            1xbet: '#00529b'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS Client v2 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0f19;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f293d;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3b82f6;
-        }
-        .glow-accent {
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
-        }
-        .glow-accent-subtle {
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EJ NBA Betting Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --accent-blue: #3b82f6;
+      --accent-glow: #2563eb;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --green-win: #10b981;
+      --red-loss: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 240px; background: var(--card-bg); border-right: 1px solid var(--card-border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .brand { font-size: 1.2rem; font-weight: bold; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; margin-bottom: 30px; }
+    .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .nav-item button { width: 100%; text-align: left; background: transparent; border: none; color: var(--text-muted); padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; }
+    .nav-item button:hover, .nav-item button.active { background: #1e293b; color: var(--text-main); }
+    
+    /* MAIN CONTENT */
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
+    .header { background: var(--card-bg); border-bottom: 1px solid var(--card-border); padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .content-area { padding: 30px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+
+    /* STATS DASHBOARD */
+    .stats-row { grid-column: span 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 10px; }
+    .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px; }
+    .stat-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
+    .stat-value { font-size: 1.5rem; font-weight: bold; }
+
+    /* GAMES SECTION */
+    .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .game-header { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .teams-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .team { font-weight: bold; font-size: 1rem; }
+    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
+    .odd-btn:hover { border-color: var(--accent-blue); background: #2563eb22; }
+
+    /* BET SLIP */
+    .bet-slip { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; height: fit-content; }
+    .slip-mode { display: flex; background: #1e293b; padding: 4px; border-radius: 8px; }
+    .slip-mode button { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .slip-mode button.active { background: var(--accent-blue); color: white; }
+    .slip-item { background: #1e293b; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
+    
+    /* INPUT FIXES (FIXES WHITE INPUT ISSUE) */
+    input[type="text"], input[type="password"], input[type="number"] {
+      width: 100%;
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+      border: 1px solid var(--card-border);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input::placeholder { color: #64748b !important; }
+
+    .btn-primary { width: 100%; background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn-primary:hover { background: var(--accent-glow); }
+
+    /* MODAL */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 12px; width: 360px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* TOAST NOTIFICATION */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+  </style>
 </head>
-<body class="bg-navy-800 text-gray-100 min-h-screen flex flex-col antialiased">
+<body>
 
-    <!-- TOP HEADER -->
-    <header class="bg-navy-700/90 backdrop-blur border-b border-navy-500/60 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <button id="mobileSidebarToggle" class="md:hidden text-gray-400 hover:text-white p-1 focus:outline-none">
-                <i class="fa-solid fa-bars text-xl"></i>
-            </button>
-            <div class="flex items-center gap-2">
-                <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-blue to-brand-cyan flex items-center justify-center font-black text-white text-lg shadow-lg shadow-blue-500/30">
-                    EJ
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-base md:text-lg tracking-wider text-white flex items-center gap-2">
-                        NBA BETTING TRACKER
-                        <span class="bg-blue-900/60 text-brand-cyan text-xs font-semibold px-2 py-0.5 rounded-full border border-brand-cyan/30">1xBet Live</span>
-                    </h1>
-                </div>
-            </div>
-        </div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div>
+      <div class="brand">🏀 EJ NBA Tracker</div>
+      <ul class="nav-menu">
+        <li class="nav-item"><button class="active">Home</button></li>
+        <li class="nav-item"><button onclick="openModal('authModal')">Login Account</button></li>
+        <li class="nav-item"><button onclick="openModal('configModal')">Database Settings</button></li>
+      </ul>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--text-muted);" id="userStatus">Status: Guest Mode</div>
+  </div>
 
-        <div class="flex items-center gap-3">
-            <div class="hidden sm:flex items-center gap-2 bg-navy-600/80 px-3 py-1.5 rounded-lg border border-navy-500 text-xs text-gray-300">
-                <span id="apiStatusDot" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="liveTimeClock">00:00:00 PM</span>
-                <span id="engineBadge" class="bg-blue-600/30 text-blue-300 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-blue-400/30 ml-1">
-                    <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> 1xBet Feed
-                </span>
-            </div>
-
-            <!-- Auth Status / User Profile Badge -->
-            <div id="authHeaderWidget" class="flex items-center gap-2">
-                <button id="openApiKeyBtn" onclick="promptApiKey()" class="bg-navy-600 hover:bg-navy-500 border border-navy-500 text-gray-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-key text-amber-400"></i>
-                    <span id="apiKeyBtnText">Set Odds API Key</span>
-                </button>
-
-                <button id="openAuthBtn" onclick="openAuthModal()" class="bg-brand-blue hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-md flex items-center gap-1.5">
-                    <i class="fa-solid fa-user-circle"></i>
-                    <span>Account</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTAINER WITH SIDEBAR & CONTENT -->
-    <div class="flex flex-1 overflow-hidden">
-
-        <!-- SIDEBAR -->
-        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-navy-700/95 border-r border-navy-500/60 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between">
-            <div class="p-4 space-y-6">
-                <!-- Navigation Links -->
-                <nav class="space-y-1.5">
-                    <div class="px-3 text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2">Navigation</div>
-                    
-                    <a href="#home" onclick="switchTab('home')" id="nav-home" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white bg-brand-blue/20 border border-brand-blue/40">
-                        <i class="fa-solid fa-basketball text-brand-blue w-5 text-center"></i>
-                        <span>1xBet NBA Odds</span>
-                    </a>
-
-                    <a href="#mybets" onclick="switchTab('mybets')" id="nav-mybets" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-navy-600/60 transition">
-                        <i class="fa-solid fa-receipt text-gray-400 w-5 text-center"></i>
-                        <span>My Bets</span>
-                        <span id="pendingCountBadge" class="ml-auto bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-                    </a>
-
-                    <a href="#stats" onclick="switchTab('stats')" id="nav-stats" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-navy-600/60 transition">
-                        <i class="fa-solid fa-chart-line text-gray-400 w-5 text-center"></i>
-                        <span>Statistics</span>
-                    </a>
-
-                    <a href="#settings" onclick="switchTab('settings')" id="nav-settings" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-navy-600/60 transition">
-                        <i class="fa-solid fa-sliders text-gray-400 w-5 text-center"></i>
-                        <span>Settings & API</span>
-                    </a>
-                </nav>
-            </div>
-
-            <!-- Sidebar Bottom Info -->
-            <div class="p-4 border-t border-navy-500/60 space-y-3">
-                <div class="bg-navy-600/50 p-3 rounded-xl border border-navy-500/50 space-y-1">
-                    <div class="text-[11px] text-gray-400">Database Engine</div>
-                    <div class="flex items-center gap-2 text-xs font-semibold">
-                        <span id="dbStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                        <span id="dbStatusText" class="text-amber-400">LocalStorage Mode</span>
-                    </div>
-                </div>
-
-                <button id="logoutBtn" onclick="handleLogout()" class="w-full hidden items-center justify-center gap-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 py-2 rounded-lg border border-rose-500/20 transition">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Logout Account</span>
-                </button>
-            </div>
-        </aside>
-
-        <!-- BACKDROP FOR MOBILE SIDEBAR -->
-        <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
-
-            <!-- PAGE SECTION: HOME / DASHBOARD & ODDS -->
-            <section id="page-home" class="space-y-6">
-                <!-- Top Summary Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60 glow-accent-subtle">
-                        <div class="text-xs text-gray-400 font-medium">Bankroll / Net P&L</div>
-                        <div id="summaryProfit" class="text-xl md:text-2xl font-black text-emerald-400 mt-1">₱0.00</div>
-                        <div class="text-[11px] text-gray-500 mt-0.5">Calculated from settled bets</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Win Rate</div>
-                        <div id="summaryWinRate" class="text-xl md:text-2xl font-black text-brand-cyan mt-1">0.0%</div>
-                        <div class="text-[11px] text-gray-500 mt-0.5">Settled W / L ratio</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Pending Slip Value</div>
-                        <div id="summaryPendingValue" class="text-xl md:text-2xl font-black text-amber-400 mt-1">₱0.00</div>
-                        <div class="text-[11px] text-gray-500 mt-0.5">Staked on open bets</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Total Bets Recorded</div>
-                        <div id="summaryTotalBets" class="text-xl md:text-2xl font-black text-white mt-1">0</div>
-                        <div class="text-[11px] text-gray-500 mt-0.5">Single & Parlay Slips</div>
-                    </div>
-                </div>
-
-                <!-- MAIN WORKSPACE GRID: GAMES VS BET SLIP -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                    <!-- LEFT / MAIN COL: NBA GAMES BOARD -->
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-navy-700/60 p-4 rounded-2xl border border-navy-500/60">
-                            <div>
-                                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                    <i class="fa-solid fa-basketball text-amber-500"></i>
-                                    <span>NBA 1xBet Matchups</span>
-                                </h2>
-                                <p class="text-xs text-gray-400">Live decimal odds fetched for Moneyline, Spread, and Totals.</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="fetchNBAOdds()" class="text-xs bg-brand-blue/20 hover:bg-brand-blue/30 text-brand-cyan px-3 py-1.5 rounded-lg border border-brand-cyan/30 font-medium transition flex items-center gap-1.5">
-                                    <i class="fa-solid fa-arrows-rotate" id="refreshOddsSpinner"></i> Refresh Odds
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- LIST OF TODAY'S NBA GAMES -->
-                        <div id="gamesListContainer" class="space-y-4">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <!-- RIGHT COL: INTERACTIVE BET SLIP -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-navy-700/90 rounded-2xl border border-navy-500/70 p-5 sticky top-20 shadow-xl space-y-4">
-                            <!-- Bet Slip Header -->
-                            <div class="flex items-center justify-between border-b border-navy-500/60 pb-3">
-                                <div class="flex items-center gap-2">
-                                    <i class="fa-solid fa-ticket text-brand-blue text-lg"></i>
-                                    <h3 class="font-bold text-white text-base">Bet Slip</h3>
-                                </div>
-                                <button onclick="clearBetSlip()" class="text-xs text-gray-400 hover:text-rose-400 transition">
-                                    Clear All
-                                </button>
-                            </div>
-
-                            <!-- Single vs Parlay Mode Selector Tabs -->
-                            <div class="grid grid-cols-2 bg-navy-800 p-1 rounded-xl border border-navy-500/50">
-                                <button id="btnModeSingle" onclick="setBetMode('single')" class="py-1.5 text-xs font-bold rounded-lg text-white bg-brand-blue transition shadow">
-                                    Single Bet
-                                </button>
-                                <button id="btnModeParlay" onclick="setBetMode('parlay')" class="py-1.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">
-                                    Parlay Bet
-                                </button>
-                            </div>
-
-                            <!-- Selected Picks List Container -->
-                            <div id="slipPicksContainer" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                                <div id="slipEmptyState" class="text-center py-8 text-gray-500 text-xs space-y-2">
-                                    <i class="fa-solid fa-hand-pointer text-2xl text-navy-500"></i>
-                                    <p>No selections made yet.<br>Click on odds to add picks to your slip.</p>
-                                </div>
-                            </div>
-
-                            <!-- Calculations Box -->
-                            <div class="bg-navy-800/80 p-3.5 rounded-xl border border-navy-500/60 space-y-3 text-xs">
-                                <div class="flex justify-between text-gray-300">
-                                    <span>Bet Mode:</span>
-                                    <span id="slipModeLabel" class="font-bold text-brand-cyan">Single</span>
-                                </div>
-                                <div class="flex justify-between text-gray-300">
-                                    <span>Combined Odds:</span>
-                                    <span id="slipCombinedOdds" class="font-mono font-bold text-emerald-400 text-sm">1.00</span>
-                                </div>
-
-                                <!-- Stake Input -->
-                                <div class="space-y-1 pt-1 border-t border-navy-600">
-                                    <label class="text-gray-400 font-medium block">Stake Amount (₱):</label>
-                                    <div class="relative">
-                                        <span class="absolute left-3 top-2.5 text-gray-400 font-bold">₱</span>
-                                        <input type="number" id="slipStakeInput" min="1" step="10" placeholder="100" oninput="recalculateSlip()" class="w-full bg-navy-900 border border-navy-500 rounded-lg py-2 pl-7 pr-3 text-white font-bold text-sm focus:outline-none focus:border-brand-blue">
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between text-gray-300 pt-2 border-t border-navy-600">
-                                    <span class="font-semibold">Potential Payout:</span>
-                                    <span id="slipPotentialPayout" class="font-mono font-black text-base text-emerald-400">₱0.00</span>
-                                </div>
-                            </div>
-
-                            <!-- Submit / Save Bet Button -->
-                            <button id="saveBetSlipBtn" onclick="saveBetSlip()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3 rounded-xl transition shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                <span>Save Bet Slip</span>
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- PAGE SECTION: MY BETS -->
-            <section id="page-mybets" class="hidden space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-navy-700/60 p-4 rounded-2xl border border-navy-500/60">
-                    <div>
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-list-check text-brand-blue"></i>
-                            <span>Betting Records</span>
-                        </h2>
-                        <p class="text-xs text-gray-400">Manage, settle, edit, export, or import your NBA betting log.</p>
-                    </div>
-
-                    <!-- Filter Options and CSV Controls -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <select id="filterStatus" onchange="renderBetsTable()" class="bg-navy-800 border border-navy-500 text-xs text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-blue">
-                            <option value="ALL">All Statuses</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Won">Won</option>
-                            <option value="Lost">Lost</option>
-                        </select>
-
-                        <select id="filterType" onchange="renderBetsTable()" class="bg-navy-800 border border-navy-500 text-xs text-white rounded-lg px-3 py-2 focus:outline-none focus:border-brand-blue">
-                            <option value="ALL">All Bet Types</option>
-                            <option value="Single">Single Bets</option>
-                            <option value="Parlay">Parlays</option>
-                        </select>
-
-                        <button onclick="exportBetsCSV()" class="bg-navy-600 hover:bg-navy-500 text-white text-xs px-3 py-2 rounded-lg border border-navy-500 flex items-center gap-1.5 transition">
-                            <i class="fa-solid fa-file-csv text-emerald-400"></i> Export CSV
-                        </button>
-
-                        <label class="bg-navy-600 hover:bg-navy-500 text-white text-xs px-3 py-2 rounded-lg border border-navy-500 flex items-center gap-1.5 cursor-pointer transition">
-                            <i class="fa-solid fa-file-import text-brand-cyan"></i> Import CSV
-                            <input type="file" id="csvFileInput" accept=".csv" onchange="importBetsCSV(event)" class="hidden">
-                        </label>
-                    </div>
-                </div>
-
-                <!-- BETS TABLE / RECORDS CARD -->
-                <div class="bg-navy-700/80 rounded-2xl border border-navy-500/60 overflow-hidden shadow-lg">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-gray-300">
-                            <thead class="bg-navy-800 text-gray-400 uppercase text-[10px] font-bold tracking-wider border-b border-navy-500/60">
-                                <tr>
-                                    <th class="py-3.5 px-4">Date</th>
-                                    <th class="py-3.5 px-4">Type</th>
-                                    <th class="py-3.5 px-4">Selection / Legs</th>
-                                    <th class="py-3.5 px-4">Odds</th>
-                                    <th class="py-3.5 px-4">Stake</th>
-                                    <th class="py-3.5 px-4">Potential Payout</th>
-                                    <th class="py-3.5 px-4">Result</th>
-                                    <th class="py-3.5 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="betsTableBody" class="divide-y divide-navy-600/50">
-                                <!-- Records populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div id="noBetsNotice" class="hidden text-center py-12 text-gray-500 text-xs">
-                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
-                        <p>No bets recorded matching your current filters.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- PAGE SECTION: STATISTICS -->
-            <section id="page-stats" class="hidden space-y-6">
-                <div class="bg-navy-700/60 p-4 rounded-2xl border border-navy-500/60">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-brand-cyan"></i>
-                        <span>Betting Performance Analytics</span>
-                    </h2>
-                    <p class="text-xs text-gray-400">Comprehensive breakdown of overall stakes, returns, and hit rates.</p>
-                </div>
-
-                <!-- STATS KPI GRID -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Total Volume Staked</div>
-                        <div id="statTotalStaked" class="text-xl md:text-2xl font-black text-white mt-1">₱0.00</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Total Net Return</div>
-                        <div id="statTotalProfit" class="text-xl md:text-2xl font-black text-emerald-400 mt-1">₱0.00</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">ROI (%)</div>
-                        <div id="statROI" class="text-xl md:text-2xl font-black text-brand-blue mt-1">0.0%</div>
-                    </div>
-                    <div class="bg-navy-700/80 p-4 rounded-2xl border border-navy-500/60">
-                        <div class="text-xs text-gray-400 font-medium">Bets Won / Lost / Pending</div>
-                        <div id="statWLP" class="text-base md:text-lg font-bold text-gray-200 mt-1">0 / 0 / 0</div>
-                    </div>
-                </div>
-
-                <!-- PERFORMANCE BREAKDOWN CARDS -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-navy-700/80 p-5 rounded-2xl border border-navy-500/60 space-y-4">
-                        <h3 class="font-bold text-white text-sm border-b border-navy-500/60 pb-2">Single vs. Parlay Win Rate</h3>
-                        
-                        <div class="space-y-3 text-xs">
-                            <div>
-                                <div class="flex justify-between text-gray-300 mb-1">
-                                    <span>Single Bets Win Rate</span>
-                                    <span id="singleWinRateText" class="font-bold text-emerald-400">0%</span>
-                                </div>
-                                <div class="w-full bg-navy-900 rounded-full h-2.5 overflow-hidden">
-                                    <div id="singleWinRateBar" class="bg-emerald-500 h-2.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-gray-300 mb-1">
-                                    <span>Parlay Bets Win Rate</span>
-                                    <span id="parlayWinRateText" class="font-bold text-brand-cyan">0%</span>
-                                </div>
-                                <div class="w-full bg-navy-900 rounded-full h-2.5 overflow-hidden">
-                                    <div id="parlayWinRateBar" class="bg-brand-cyan h-2.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-navy-700/80 p-5 rounded-2xl border border-navy-500/60 space-y-3 text-xs">
-                        <h3 class="font-bold text-white text-sm border-b border-navy-500/60 pb-2">Financial Breakdown</h3>
-                        <div class="flex justify-between py-1 border-b border-navy-600/50">
-                            <span class="text-gray-400">Total Money Staked:</span>
-                            <span id="statBreakdownStake" class="font-bold text-white">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-navy-600/50">
-                            <span class="text-gray-400">Total Won Payouts:</span>
-                            <span id="statBreakdownPayout" class="font-bold text-emerald-400">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-navy-600/50">
-                            <span class="text-gray-400">Lost Stakes Volume:</span>
-                            <span id="statBreakdownLost" class="font-bold text-rose-400">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between py-1 font-bold text-sm text-white pt-2">
-                            <span>Net Profit / Loss:</span>
-                            <span id="statBreakdownNet" class="text-emerald-400">₱0.00</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- PAGE SECTION: SETTINGS & API CONFIG -->
-            <section id="page-settings" class="hidden space-y-6">
-                <div class="bg-navy-700/60 p-4 rounded-2xl border border-navy-500/60">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-amber-500"></i>
-                        <span>Settings & Integrations</span>
-                    </h2>
-                    <p class="text-xs text-gray-400">Configure 1xBet / The Odds API Key and Supabase database credentials.</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Odds API Key Settings -->
-                    <div class="bg-navy-700/80 p-6 rounded-2xl border border-navy-500/60 space-y-4">
-                        <div class="border-b border-navy-500/60 pb-2">
-                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-key text-amber-400"></i> The Odds API Key (for 1xBet Feed)
-                            </h3>
-                            <p class="text-xs text-gray-400">Get a free key at <a href="https://the-odds-api.com" target="_blank" class="text-brand-cyan underline">the-odds-api.com</a> for live 1xBet odds.</p>
-                        </div>
-
-                        <div class="space-y-3 text-xs">
-                            <div>
-                                <label class="block text-gray-300 font-medium mb-1">API Key</label>
-                                <input type="password" id="cfgOddsApiKey" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-navy-900 border border-navy-500 rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-none focus:border-brand-blue">
-                            </div>
-
-                            <button onclick="saveOddsApiKey()" class="bg-brand-blue hover:bg-brand-hover text-white font-bold px-4 py-2.5 rounded-xl transition text-xs flex items-center gap-2">
-                                <i class="fa-solid fa-save"></i> Save & Fetch 1xBet Live Odds
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Supabase Settings -->
-                    <div class="bg-navy-700/80 p-6 rounded-2xl border border-navy-500/60 space-y-4">
-                        <div class="border-b border-navy-500/60 pb-2">
-                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-database text-brand-cyan"></i> Supabase Backend Credentials
-                            </h3>
-                            <p class="text-xs text-gray-400">Connect your cloud database for cross-device sync.</p>
-                        </div>
-
-                        <div class="space-y-3 text-xs">
-                            <div>
-                                <label class="block text-gray-300 font-medium mb-1">Supabase URL</label>
-                                <input type="text" id="cfgSupabaseUrl" placeholder="https://xyz.supabase.co" class="w-full bg-navy-900 border border-navy-500 rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-none focus:border-brand-blue">
-                            </div>
-
-                            <div>
-                                <label class="block text-gray-300 font-medium mb-1">Anon Key</label>
-                                <input type="password" id="cfgSupabaseKey" placeholder="eyJhbGciOiJIUzI1Ni..." class="w-full bg-navy-900 border border-navy-500 rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-none focus:border-brand-blue">
-                            </div>
-
-                            <div class="flex items-center gap-2 pt-1">
-                                <button onclick="saveSupabaseConfig()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl transition text-xs flex items-center gap-2">
-                                    <i class="fa-solid fa-plug"></i> Save Supabase
-                                </button>
-                                <button onclick="disconnectSupabase()" class="bg-navy-600 hover:bg-navy-500 text-gray-300 font-semibold px-3 py-2.5 rounded-xl transition text-xs">
-                                    Local Mode
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrapper">
+    <div class="header">
+      <h2>NBA Dashboard</h2>
+      <div id="authBtnGroup">
+        <button onclick="openModal('authModal')" style="background: var(--card-border); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Login / Sign Up</button>
+      </div>
     </div>
 
-    <!-- EDIT BET MODAL -->
-    <div id="editBetModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-navy-700 border border-navy-500 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-navy-500/60 pb-3">
-                <h3 class="font-bold text-white text-base">Edit Bet Record</h3>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <input type="hidden" id="editBetId">
-
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Pick / Parlay Details</label>
-                    <input type="text" id="editBetPick" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white font-medium focus:outline-none focus:border-brand-blue">
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Odds</label>
-                        <input type="number" step="0.01" id="editBetOdds" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white font-mono focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Stake (₱)</label>
-                        <input type="number" step="1" id="editBetStake" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white font-mono focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Result Status</label>
-                    <select id="editBetResult" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white font-bold focus:outline-none">
-                        <option value="Pending">Pending</option>
-                        <option value="Won">Won</option>
-                        <option value="Lost">Lost</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Notes</label>
-                    <textarea id="editBetNotes" rows="2" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white focus:outline-none"></textarea>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button onclick="closeEditModal()" class="bg-navy-600 hover:bg-navy-500 text-gray-300 font-semibold px-4 py-2 rounded-xl text-xs">Cancel</button>
-                <button onclick="saveEditBet()" class="bg-brand-blue hover:bg-brand-hover text-white font-bold px-4 py-2 rounded-xl text-xs">Save Changes</button>
-            </div>
+    <div class="content-area">
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-title">Total Bets</div>
+          <div class="stat-value" id="statTotal">0</div>
         </div>
-    </div>
-
-    <!-- AUTH MODAL -->
-    <div id="authModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-navy-700 border border-navy-500 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-navy-500/60 pb-3">
-                <h3 class="font-bold text-white text-base">Supabase User Account</h3>
-                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Email</label>
-                    <input type="email" id="authEmail" placeholder="your@email.com" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white focus:outline-none focus:border-brand-blue">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Password</label>
-                    <input type="password" id="authPassword" placeholder="••••••••" class="w-full bg-navy-900 border border-navy-500 rounded-xl p-2.5 text-white focus:outline-none focus:border-brand-blue">
-                </div>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button onclick="handleLogin()" class="flex-1 bg-brand-blue hover:bg-brand-hover text-white font-bold py-2.5 rounded-xl text-xs">Login</button>
-                <button onclick="handleSignUp()" class="flex-1 bg-navy-600 hover:bg-navy-500 text-white font-bold py-2.5 rounded-xl text-xs">Sign Up</button>
-            </div>
+        <div class="stat-card">
+          <div class="stat-title">Win Rate</div>
+          <div class="stat-value" id="statWinRate" style="color: var(--green-win);">0%</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-title">Total Stake</div>
+          <div class="stat-value" id="statStake">₱0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Net Profit</div>
+          <div class="stat-value" id="statProfit">₱0.00</div>
+        </div>
+      </div>
+
+      <!-- LEFT: NBA GAMES -->
+      <div>
+        <div class="section-title">
+          <span>NBA Today Fixtures</span>
+          <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 8px; border-radius: 4px;">LIVE FEED</span>
+        </div>
+
+        <div id="gamesList">
+          <!-- Game 1 -->
+          <div class="game-card">
+            <div class="game-header"><span>7:30 PM ET</span><span>Upcoming</span></div>
+            <div class="teams-container">
+              <span class="team">Boston Celtics</span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+              <span class="team">LA Lakers</span>
+            </div>
+            <div class="odds-row">
+              <div class="odd-btn" onclick="addSelection('Celtics ML', 1.85)">Celtics ML<br><strong>1.85</strong></div>
+              <div class="odd-btn" onclick="addSelection('Lakers ML', 1.95)">Lakers ML<br><strong>1.95</strong></div>
+              <div class="odd-btn" onclick="addSelection('Over 224.5', 1.90)">O 224.5<br><strong>1.90</strong></div>
+            </div>
+          </div>
+
+          <!-- Game 2 -->
+          <div class="game-card">
+            <div class="game-header"><span>10:00 PM ET</span><span>Upcoming</span></div>
+            <div class="teams-container">
+              <span class="team">Golden State Warriors</span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+              <span class="team">Phoenix Suns</span>
+            </div>
+            <div class="odds-row">
+              <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors ML<br><strong>1.75</strong></div>
+              <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns ML<br><strong>2.10</strong></div>
+              <div class="odd-btn" onclick="addSelection('Under 231.0', 1.91)">U 231.0<br><strong>1.91</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: BET SLIP -->
+      <div class="bet-slip">
+        <h3>Bet Slip</h3>
+        <div class="slip-mode">
+          <button id="btnSingle" class="active" onclick="setMode('single')">Single</button>
+          <button id="btnParlay" onclick="setMode('parlay')">Parlay</button>
+        </div>
+
+        <div id="slipItems">
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet. Click odds to build slip.</div>
+        </div>
+
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Total Odds</label>
+          <div id="totalOdds" style="font-size: 1.2rem; font-weight: bold; color: var(--accent-blue);">1.00</div>
+        </div>
+
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Stake (₱)</label>
+          <input type="number" id="stakeInput" value="100" oninput="calculatePayout()">
+        </div>
+
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Potential Payout</label>
+          <div id="payoutDisplay" style="font-size: 1.3rem; font-weight: bold; color: var(--green-win);">₱0.00</div>
+        </div>
+
+        <button class="btn-primary" onclick="saveBet()">Place Bet Record</button>
+      </div>
     </div>
+  </div>
 
-    <!-- NOTIFICATION TOAST -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-navy-600 border border-brand-blue text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toastMsg">Action completed successfully.</span>
+  <!-- AUTH MODAL -->
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Supabase User Login</h3>
+        <button onclick="closeModal('authModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Email</label>
+        <input type="text" id="authEmail" placeholder="feriaeduard08@gmail.com">
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Password</label>
+        <input type="password" id="authPassword" placeholder="••••••••">
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-primary" onclick="handleLogin()">Login</button>
+        <button class="btn-primary" style="background: #1e293b;" onclick="handleSignUp()">Sign Up</button>
+      </div>
     </div>
-
-    <!-- APPLICATION LOGIC JS -->
-    <script>
-        // STATE APP
-        let supabaseClient = null;
-        let selectedPicks = [];
-        let betMode = 'single';
-        let betsLog = [];
-        let fetchedGamesList = [];
-
-        window.onload = function() {
-            startClock();
-            initSidebar();
-            initSupabaseClient();
-            loadSavedApiKey();
-            fetchNBAOdds();
-            loadBetsData();
-        };
-
-        function startClock() {
-            setInterval(() => {
-                const clock = document.getElementById('liveTimeClock');
-                if (clock) clock.innerText = new Date().toLocaleTimeString();
-            }, 1000);
-        }
-
-        function initSidebar() {
-            const toggle = document.getElementById('mobileSidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            const backdrop = document.getElementById('sidebarBackdrop');
-
-            if (toggle && sidebar && backdrop) {
-                toggle.onclick = () => {
-                    sidebar.classList.toggle('-translate-x-full');
-                    backdrop.classList.toggle('hidden');
-                };
-                backdrop.onclick = () => {
-                    sidebar.classList.add('-translate-x-full');
-                    backdrop.classList.add('hidden');
-                };
-            }
-        }
-
-        function switchTab(tabId) {
-            ['home', 'mybets', 'stats', 'settings'].forEach(id => {
-                const page = document.getElementById(`page-${id}`);
-                const nav = document.getElementById(`nav-${id}`);
-                if (page) page.classList.add('hidden');
-                if (nav) {
-                    nav.classList.remove('bg-brand-blue/20', 'border', 'border-brand-blue/40', 'text-white');
-                    nav.classList.add('text-gray-400');
-                }
-            });
-
-            const activePage = document.getElementById(`page-${tabId}`);
-            const activeNav = document.getElementById(`nav-${tabId}`);
-            if (activePage) activePage.classList.remove('hidden');
-            if (activeNav) {
-                activeNav.classList.add('bg-brand-blue/20', 'border', 'border-brand-blue/40', 'text-white');
-                activeNav.classList.remove('text-gray-400');
-            }
-
-            const sidebar = document.getElementById('sidebar');
-            const backdrop = document.getElementById('sidebarBackdrop');
-            if (sidebar) sidebar.classList.add('-translate-x-full');
-            if (backdrop) backdrop.classList.add('hidden');
-        }
-
-        // ODDS API & 1XBET ENGINE INTEGRATION
-        function loadSavedApiKey() {
-            const key = localStorage.getItem('ej_odds_api_key') || '';
-            const keyInput = document.getElementById('cfgOddsApiKey');
-            const btnText = document.getElementById('apiKeyBtnText');
-            if (keyInput) keyInput.value = key;
-            if (btnText && key) btnText.innerText = 'Key Saved ✓';
-        }
-
-        function promptApiKey() {
-            const current = localStorage.getItem('ej_odds_api_key') || '';
-            const userKey = prompt("Enter your free The Odds API key for 1xBet live odds:\n(Get one at https://the-odds-api.com)", current);
-            if (userKey !== null) {
-                localStorage.setItem('ej_odds_api_key', userKey.trim());
-                loadSavedApiKey();
-                fetchNBAOdds();
-            }
-        }
-
-        function saveOddsApiKey() {
-            const key = document.getElementById('cfgOddsApiKey').value.trim();
-            localStorage.setItem('ej_odds_api_key', key);
-            loadSavedApiKey();
-            showToast("Odds API Key saved!");
-            fetchNBAOdds();
-        }
-
-        async function fetchNBAOdds() {
-            const spinner = document.getElementById('refreshOddsSpinner');
-            if (spinner) spinner.classList.add('fa-spin');
-
-            const apiKey = localStorage.getItem('ej_odds_api_key');
-
-            if (apiKey) {
-                // Fetch real live odds from 1xBet via The Odds API
-                const url = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${apiKey}&regions=eu,us&markets=h2h,spreads,totals&oddsFormat=decimal&bookmakers=1xbet`;
-
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error('API Error or quota exceeded');
-                    const data = await response.json();
-                    
-                    if (data && data.length > 0) {
-                        parseRealOddsData(data);
-                        showToast("Loaded real live 1xBet NBA odds!");
-                    } else {
-                        loadFallbackLiveOdds();
-                    }
-                } catch (err) {
-                    console.warn("Live API fetch failed, loading current market simulation:", err);
-                    loadFallbackLiveOdds();
-                    showToast("Using current NBA market lines", true);
-                }
-            } else {
-                loadFallbackLiveOdds();
-            }
-
-            if (spinner) spinner.classList.remove('fa-spin');
-        }
-
-        function parseRealOddsData(games) {
-            fetchedGamesList = games.map((game, idx) => {
-                const bookmaker = game.bookmakers?.find(b => b.key.toLowerCase() === '1xbet') || game.bookmakers?.[0];
-                const h2h = bookmaker?.markets?.find(m => m.key === 'h2h');
-                const spreads = bookmaker?.markets?.find(m => m.key === 'spreads');
-                const totals = bookmaker?.markets?.find(m => m.key === 'totals');
-
-                const awayTeam = game.away_team;
-                const homeTeam = game.home_team;
-
-                const awayML = h2h?.outcomes?.find(o => o.name === awayTeam)?.price || 1.90;
-                const homeML = h2h?.outcomes?.find(o => o.name === homeTeam)?.price || 1.90;
-
-                const awaySpreadOutcome = spreads?.outcomes?.find(o => o.name === awayTeam);
-                const homeSpreadOutcome = spreads?.outcomes?.find(o => o.name === homeTeam);
-
-                const overOutcome = totals?.outcomes?.find(o => o.name === 'Over');
-                const underOutcome = totals?.outcomes?.find(o => o.name === 'Under');
-
-                return {
-                    id: game.id || `game_${idx}`,
-                    homeTeam: homeTeam,
-                    awayTeam: awayTeam,
-                    homeAbbr: getAbbr(homeTeam),
-                    awayAbbr: getAbbr(awayTeam),
-                    time: new Date(game.commence_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    status: '1xBet Live',
-                    odds: {
-                        mlAway: awayML,
-                        mlHome: homeML,
-                        spreadAway: awaySpreadOutcome ? `${awaySpreadOutcome.point > 0 ? '+' : ''}${awaySpreadOutcome.point}` : '+2.5',
-                        spreadAwayVal: awaySpreadOutcome?.price || 1.91,
-                        spreadHome: homeSpreadOutcome ? `${homeSpreadOutcome.point > 0 ? '+' : ''}${homeSpreadOutcome.point}` : '-2.5',
-                        spreadHomeVal: homeSpreadOutcome?.price || 1.91,
-                        overVal: overOutcome?.price || 1.90,
-                        underVal: underOutcome?.price || 1.90,
-                        totalLine: overOutcome?.point || 224.5
-                    }
-                };
-            });
-
-            renderGamesList();
-        }
-
-        function loadFallbackLiveOdds() {
-            // Dynamic live fixture feed for today
-            const todayStr = new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-            fetchedGamesList = [
-                {
-                    id: 'live_1',
-                    homeTeam: 'Los Angeles Lakers',
-                    awayTeam: 'Boston Celtics',
-                    homeAbbr: 'LAL',
-                    awayAbbr: 'BOS',
-                    time: '07:30 PM',
-                    status: '1xBet Feed',
-                    odds: { mlAway: 1.95, mlHome: 1.85, spreadAway: '+2.5', spreadAwayVal: 1.90, spreadHome: '-2.5', spreadHomeVal: 1.90, overVal: 1.91, underVal: 1.91, totalLine: 224.5 }
-                },
-                {
-                    id: 'live_2',
-                    homeTeam: 'Golden State Warriors',
-                    awayTeam: 'Phoenix Suns',
-                    homeAbbr: 'GSW',
-                    awayAbbr: 'PHX',
-                    time: '10:00 PM',
-                    status: '1xBet Feed',
-                    odds: { mlAway: 2.15, mlHome: 1.72, spreadAway: '+3.5', spreadAwayVal: 1.92, spreadHome: '-3.5', spreadHomeVal: 1.88, overVal: 1.95, underVal: 1.87, totalLine: 231.0 }
-                },
-                {
-                    id: 'live_3',
-                    homeTeam: 'Denver Nuggets',
-                    awayTeam: 'Milwaukee Bucks',
-                    homeAbbr: 'DEN',
-                    awayAbbr: 'MIL',
-                    time: '08:00 PM',
-                    status: '1xBet Feed',
-                    odds: { mlAway: 1.85, mlHome: 1.95, spreadAway: '-1.5', spreadAwayVal: 1.91, spreadHome: '+1.5', spreadHomeVal: 1.91, overVal: 1.89, underVal: 1.93, totalLine: 228.5 }
-                },
-                {
-                    id: 'live_4',
-                    homeTeam: 'Miami Heat',
-                    awayTeam: 'Dallas Mavericks',
-                    homeAbbr: 'MIA',
-                    awayAbbr: 'DAL',
-                    time: '07:00 PM',
-                    status: '1xBet Feed',
-                    odds: { mlAway: 1.75, mlHome: 2.10, spreadAway: '-4.0', spreadAwayVal: 1.90, spreadHome: '+4.0', spreadHomeVal: 1.90, overVal: 1.90, underVal: 1.90, totalLine: 218.0 }
-                }
-            ];
-
-            renderGamesList();
-        }
-
-        function getAbbr(teamName) {
-            const words = teamName.split(' ');
-            if (words.length >= 3) return words[2].substring(0, 3).toUpperCase();
-            return words[words.length - 1].substring(0, 3).toUpperCase();
-        }
-
-        // RENDER NBA MATCHUPS MATRIX
-        function renderGamesList() {
-            const container = document.getElementById('gamesListContainer');
-            if (!container) return;
-
-            container.innerHTML = fetchedGamesList.map(game => `
-                <div class="bg-navy-700/80 border border-navy-500/60 rounded-2xl p-4 space-y-4 hover:border-navy-500 transition">
-                    <div class="flex items-center justify-between border-b border-navy-600/50 pb-2.5 text-xs text-gray-400">
-                        <span class="font-semibold text-gray-300"><i class="fa-regular fa-clock text-brand-blue mr-1"></i> ${game.time}</span>
-                        <span class="bg-brand-1xbet/40 text-blue-300 px-2.5 py-0.5 rounded border border-blue-400/30 text-[10px] font-bold">
-                            <i class="fa-solid fa-globe mr-1"></i> ${game.status}
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-navy-800 border border-navy-500/80 flex items-center justify-center font-black text-xs text-brand-cyan shadow">
-                                ${game.awayAbbr}
-                            </div>
-                            <div>
-                                <div class="font-bold text-white text-sm">${game.awayTeam}</div>
-                                <div class="text-[11px] text-gray-400">Away</div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3 justify-end text-right">
-                            <div>
-                                <div class="font-bold text-white text-sm">${game.homeTeam}</div>
-                                <div class="text-[11px] text-gray-400">Home</div>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-navy-800 border border-navy-500/80 flex items-center justify-center font-black text-xs text-amber-400 shadow">
-                                ${game.homeAbbr}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 pt-1 text-xs">
-                        <div class="space-y-1">
-                            <div class="text-[10px] text-gray-400 font-bold uppercase text-center">Moneyline</div>
-                            <div class="grid grid-cols-2 gap-1">
-                                ${renderOddsBtn(game.id, `${game.awayAbbr} ML`, game.odds.mlAway)}
-                                ${renderOddsBtn(game.id, `${game.homeAbbr} ML`, game.odds.mlHome)}
-                            </div>
-                        </div>
-
-                        <div class="space-y-1">
-                            <div class="text-[10px] text-gray-400 font-bold uppercase text-center">Spread</div>
-                            <div class="grid grid-cols-2 gap-1">
-                                ${renderOddsBtn(game.id, `${game.awayAbbr} ${game.odds.spreadAway}`, game.odds.spreadAwayVal)}
-                                ${renderOddsBtn(game.id, `${game.homeAbbr} ${game.odds.spreadHome}`, game.odds.spreadHomeVal)}
-                            </div>
-                        </div>
-
-                        <div class="space-y-1">
-                            <div class="text-[10px] text-gray-400 font-bold uppercase text-center">Totals</div>
-                            <div class="grid grid-cols-2 gap-1">
-                                ${renderOddsBtn(game.id, `O ${game.odds.totalLine}`, game.odds.overVal)}
-                                ${renderOddsBtn(game.id, `U ${game.odds.totalLine}`, game.odds.underVal)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderOddsBtn(gameId, label, odds) {
-            const numOdds = parseFloat(odds) || 1.90;
-            const isPicked = selectedPicks.some(p => p.gameId === gameId && p.pick === label);
-            const activeClass = isPicked 
-                ? 'bg-brand-blue text-white border-brand-cyan shadow-md shadow-blue-500/20' 
-                : 'bg-navy-800 hover:bg-navy-600 text-gray-200 border-navy-500';
-
-            const escapedLabel = label.replace(/'/g, "\\'");
-
-            return `
-                <button onclick="toggleOddsPick('${gameId}', '${escapedLabel}', ${numOdds})" 
-                    class="p-2 rounded-xl border text-center transition flex flex-col items-center justify-center ${activeClass}">
-                    <span class="text-[10px] font-medium truncate w-full text-gray-300">${label}</span>
-                    <span class="font-mono font-bold text-xs text-emerald-400 mt-0.5">${numOdds.toFixed(2)}</span>
-                </button>
-            `;
-        }
-
-        // BET SLIP SELECTION LOGIC
-        function toggleOddsPick(gameId, pickLabel, odds) {
-            const idx = selectedPicks.findIndex(p => p.gameId === gameId && p.pick === pickLabel);
-
-            if (idx >= 0) {
-                selectedPicks.splice(idx, 1);
-            } else {
-                if (betMode === 'single') {
-                    selectedPicks = [];
-                }
-                selectedPicks.push({
-                    gameId,
-                    pick: pickLabel,
-                    odds: parseFloat(odds)
-                });
-            }
-
-            renderGamesList();
-            renderBetSlipPicks();
-            recalculateSlip();
-        }
-
-        function removePick(index) {
-            selectedPicks.splice(index, 1);
-            renderGamesList();
-            renderBetSlipPicks();
-            recalculateSlip();
-        }
-
-        function clearBetSlip() {
-            selectedPicks = [];
-            renderGamesList();
-            renderBetSlipPicks();
-            recalculateSlip();
-        }
-
-        function setBetMode(mode) {
-            betMode = mode;
-            const btnSingle = document.getElementById('btnModeSingle');
-            const btnParlay = document.getElementById('btnModeParlay');
-            const modeLabel = document.getElementById('slipModeLabel');
-
-            if (mode === 'single') {
-                btnSingle.className = 'py-1.5 text-xs font-bold rounded-lg text-white bg-brand-blue transition shadow';
-                btnParlay.className = 'py-1.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition';
-                if (modeLabel) modeLabel.innerText = 'Single Bet';
-                if (selectedPicks.length > 1) {
-                    selectedPicks = [selectedPicks[selectedPicks.length - 1]];
-                }
-            } else {
-                btnParlay.className = 'py-1.5 text-xs font-bold rounded-lg text-white bg-brand-blue transition shadow';
-                btnSingle.className = 'py-1.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition';
-                if (modeLabel) modeLabel.innerText = 'Parlay Bet';
-            }
-
-            renderGamesList();
-            renderBetSlipPicks();
-            recalculateSlip();
-        }
-
-        function renderBetSlipPicks() {
-            const container = document.getElementById('slipPicksContainer');
-            const emptyState = document.getElementById('slipEmptyState');
-
-            if (selectedPicks.length === 0) {
-                if (emptyState) emptyState.classList.remove('hidden');
-                container.innerHTML = '';
-                if (emptyState) container.appendChild(emptyState);
-                return;
-            }
-
-            container.innerHTML = selectedPicks.map((pick, i) => `
-                <div class="bg-navy-800 p-2.5 rounded-xl border border-navy-500/60 flex items-center justify-between text-xs">
-                    <div class="space-y-0.5 max-w-[170px]">
-                        <div class="font-bold text-white truncate">${pick.pick}</div>
-                        <div class="text-[10px] text-gray-400 font-mono">1xBet Decimal Odds: ${pick.odds.toFixed(2)}</div>
-                    </div>
-                    <button onclick="removePick(${i})" class="text-gray-400 hover:text-rose-400 p-1">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function recalculateSlip() {
-            const combinedOddsElem = document.getElementById('slipCombinedOdds');
-            const payoutElem = document.getElementById('slipPotentialPayout');
-            const stakeInput = document.getElementById('slipStakeInput');
-
-            if (selectedPicks.length === 0) {
-                if (combinedOddsElem) combinedOddsElem.innerText = '1.00';
-                if (payoutElem) payoutElem.innerText = '₱0.00';
-                return;
-            }
-
-            let combinedOdds = 1.0;
-            if (betMode === 'single') {
-                combinedOdds = selectedPicks[0].odds;
-            } else {
-                combinedOdds = selectedPicks.reduce((acc, p) => acc * p.odds, 1.0);
-            }
-
-            const stake = parseFloat(stakeInput.value) || 0;
-            const payout = stake * combinedOdds;
-
-            if (combinedOddsElem) combinedOddsElem.innerText = combinedOdds.toFixed(2);
-            if (payoutElem) payoutElem.innerText = `₱${payout.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        }
-
-        // SAVE BET SLIP (SUPABASE & LOCALSTORAGE)
-        async function saveBetSlip() {
-            if (selectedPicks.length === 0) {
-                showToast("Please select at least one odds pick first", true);
-                return;
-            }
-
-            if (betMode === 'parlay' && selectedPicks.length < 2) {
-                showToast("Parlays require at least 2 selections", true);
-                return;
-            }
-
-            const stakeInput = document.getElementById('slipStakeInput');
-            const stake = parseFloat(stakeInput.value);
-
-            if (!stake || stake <= 0) {
-                showToast("Please enter a valid stake amount", true);
-                return;
-            }
-
-            let combinedOdds = betMode === 'single' 
-                ? selectedPicks[0].odds 
-                : selectedPicks.reduce((acc, p) => acc * p.odds, 1.0);
-
-            const payout = stake * combinedOdds;
-
-            let pickSummary = '';
-            let notesPayload = '';
-
-            if (betMode === 'single') {
-                pickSummary = selectedPicks[0].pick;
-                notesPayload = `Single Bet on ${selectedPicks[0].pick}`;
-            } else {
-                pickSummary = `${selectedPicks.length}-Leg Parlay (${selectedPicks.map(p => p.pick.split(' ')[0]).join('/')})`;
-                notesPayload = JSON.stringify({
-                    isParlay: true,
-                    legs: selectedPicks
-                });
-            }
-
-            const newBet = {
-                id: 'bet_' + Date.now(),
-                created_at: new Date().toISOString(),
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                bet_type: betMode === 'single' ? 'Single' : 'Parlay',
-                pick: pickSummary,
-                odds: parseFloat(combinedOdds.toFixed(2)),
-                stake: stake,
-                payout: parseFloat(payout.toFixed(2)),
-                result: 'Pending',
-                notes: notesPayload
-            };
-
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('bets')
-                        .insert([newBet])
-                        .select();
-
-                    if (error) throw error;
-                    showToast("Bet slip saved to Supabase!");
-                } catch (err) {
-                    console.error("Supabase Save Error:", err);
-                    showToast("Saved locally (Supabase fallback)", true);
-                    saveToLocalStorage(newBet);
-                }
-            } else {
-                saveToLocalStorage(newBet);
-                showToast("Bet slip saved locally!");
-            }
-
-            clearBetSlip();
-            loadBetsData();
-        }
-
-        function saveToLocalStorage(betRecord) {
-            const localBets = JSON.parse(localStorage.getItem('ej_local_bets') || '[]');
-            localBets.unshift(betRecord);
-            localStorage.setItem('ej_local_bets', JSON.stringify(localBets));
-        }
-
-        async function loadBetsData() {
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('bets')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-
-                    if (error) throw error;
-                    betsLog = data || [];
-                } catch (err) {
-                    console.error("Fetch Supabase Error:", err);
-                    betsLog = JSON.parse(localStorage.getItem('ej_local_bets') || '[]');
-                }
-            } else {
-                betsLog = JSON.parse(localStorage.getItem('ej_local_bets') || '[]');
-            }
-
-            renderBetsTable();
-            updateCalculatedStats();
-        }
-
-        function renderBetsTable() {
-            const tbody = document.getElementById('betsTableBody');
-            const noNotice = document.getElementById('noBetsNotice');
-            const statusFilter = document.getElementById('filterStatus').value;
-            const typeFilter = document.getElementById('filterType').value;
-
-            if (!tbody) return;
-
-            let filtered = betsLog.filter(b => {
-                const matchStatus = statusFilter === 'ALL' || b.result === statusFilter;
-                const matchType = typeFilter === 'ALL' || b.bet_type === typeFilter;
-                return matchStatus && matchType;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '';
-                if (noNotice) noNotice.classList.remove('hidden');
-                return;
-            }
-
-            if (noNotice) noNotice.classList.add('hidden');
-
-            tbody.innerHTML = filtered.map(b => {
-                let statusBadgeClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-                if (b.result === 'Won') statusBadgeClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-                if (b.result === 'Lost') statusBadgeClass = 'bg-rose-500/20 text-rose-400 border-rose-500/30';
-
-                let parlayDetailsHtml = '';
-                if (b.notes) {
-                    try {
-                        const parsed = JSON.parse(b.notes);
-                        if (parsed.isParlay && parsed.legs) {
-                            parlayDetailsHtml = `
-                                <div class="mt-1 text-[10px] text-gray-400 bg-navy-900/80 p-1.5 rounded border border-navy-600/50 space-y-0.5">
-                                    <div class="font-bold text-brand-cyan">Parlay Legs:</div>
-                                    ${parsed.legs.map(l => `<div>• ${l.pick} (${l.odds.toFixed(2)})</div>`).join('')}
-                                </div>
-                            `;
-                        }
-                    } catch (e) {}
-                }
-
-                return `
-                    <tr class="hover:bg-navy-600/30 transition">
-                        <td class="py-3 px-4 font-mono text-gray-300">${b.date || 'Today'}</td>
-                        <td class="py-3 px-4 font-bold text-white">${b.bet_type || 'Single'}</td>
-                        <td class="py-3 px-4">
-                            <div class="font-semibold text-white">${b.pick}</div>
-                            ${parlayDetailsHtml}
-                        </td>
-                        <td class="py-3 px-4 font-mono font-bold text-brand-cyan">${parseFloat(b.odds).toFixed(2)}</td>
-                        <td class="py-3 px-4 font-mono font-bold text-white">₱${parseFloat(b.stake).toLocaleString()}</td>
-                        <td class="py-3 px-4 font-mono font-bold text-emerald-400">₱${parseFloat(b.payout).toLocaleString()}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${statusBadgeClass}">${b.result}</span>
-                        </td>
-                        <td class="py-3 px-4 text-right space-x-1">
-                            <button onclick="openEditModal('${b.id}')" class="p-1.5 hover:bg-navy-500 rounded text-gray-300 hover:text-white" title="Edit Bet">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </button>
-                            <button onclick="deleteBet('${b.id}')" class="p-1.5 hover:bg-rose-500/20 rounded text-gray-400 hover:text-rose-400" title="Delete Bet">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function updateCalculatedStats() {
-            let totalBets = betsLog.length;
-            let pendingCount = 0, wonCount = 0, lostCount = 0;
-            let totalStaked = 0, totalProfit = 0, pendingStake = 0;
-            let totalWonPayout = 0, totalLostStake = 0;
-            let singleWon = 0, singleLost = 0, parlayWon = 0, parlayLost = 0;
-
-            betsLog.forEach(b => {
-                const stake = parseFloat(b.stake) || 0;
-                const payout = parseFloat(b.payout) || 0;
-
-                totalStaked += stake;
-
-                if (b.result === 'Pending') {
-                    pendingCount++;
-                    pendingStake += stake;
-                } else if (b.result === 'Won') {
-                    wonCount++;
-                    totalWonPayout += payout;
-                    totalProfit += (payout - stake);
-                    if (b.bet_type === 'Parlay') parlayWon++; else singleWon++;
-                } else if (b.result === 'Lost') {
-                    lostCount++;
-                    totalLostStake += stake;
-                    totalProfit -= stake;
-                    if (b.bet_type === 'Parlay') parlayLost++; else singleLost++;
-                }
-            });
-
-            const settledCount = wonCount + lostCount;
-            const winRate = settledCount > 0 ? ((wonCount / settledCount) * 100).toFixed(1) : '0.0';
-            const roi = totalStaked > 0 ? ((totalProfit / totalStaked) * 100).toFixed(1) : '0.0';
-
-            document.getElementById('summaryProfit').innerText = `₱${totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('summaryWinRate').innerText = `${winRate}%`;
-            document.getElementById('summaryPendingValue').innerText = `₱${pendingStake.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('summaryTotalBets').innerText = totalBets;
-            document.getElementById('pendingCountBadge').innerText = pendingCount;
-
-            document.getElementById('statTotalStaked').innerText = `₱${totalStaked.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('statTotalProfit').innerText = `₱${totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('statROI').innerText = `${roi}%`;
-            document.getElementById('statWLP').innerText = `${wonCount} / ${lostCount} / ${pendingCount}`;
-
-            document.getElementById('statBreakdownStake').innerText = `₱${totalStaked.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('statBreakdownPayout').innerText = `₱${totalWonPayout.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('statBreakdownLost').innerText = `₱${totalLostStake.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('statBreakdownNet').innerText = `₱${totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-
-            const singleSettled = singleWon + singleLost;
-            const singleWR = singleSettled > 0 ? Math.round((singleWon / singleSettled) * 100) : 0;
-            document.getElementById('singleWinRateText').innerText = `${singleWR}%`;
-            document.getElementById('singleWinRateBar').style.width = `${singleWR}%`;
-
-            const parlaySettled = parlayWon + parlayLost;
-            const parlayWR = parlaySettled > 0 ? Math.round((parlayWon / parlaySettled) * 100) : 0;
-            document.getElementById('parlayWinRateText').innerText = `${parlayWR}%`;
-            document.getElementById('parlayWinRateBar').style.width = `${parlayWR}%`;
-        }
-
-        // EDIT & DELETE
-        function openEditModal(betId) {
-            const bet = betsLog.find(b => b.id === betId);
-            if (!bet) return;
-
-            document.getElementById('editBetId').value = bet.id;
-            document.getElementById('editBetPick').value = bet.pick;
-            document.getElementById('editBetOdds').value = bet.odds;
-            document.getElementById('editBetStake').value = bet.stake;
-            document.getElementById('editBetResult').value = bet.result;
-            document.getElementById('editBetNotes').value = bet.notes || '';
-
-            document.getElementById('editBetModal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('editBetModal').classList.add('hidden');
-        }
-
-        async function saveEditBet() {
-            const id = document.getElementById('editBetId').value;
-            const pick = document.getElementById('editBetPick').value;
-            const odds = parseFloat(document.getElementById('editBetOdds').value);
-            const stake = parseFloat(document.getElementById('editBetStake').value);
-            const result = document.getElementById('editBetResult').value;
-            const notes = document.getElementById('editBetNotes').value;
-
-            const payout = stake * odds;
-            const updatedFields = { pick, odds, stake, payout, result, notes };
-
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('bets').update(updatedFields).eq('id', id);
-                    if (error) throw error;
-                    showToast("Bet record updated!");
-                } catch (err) {
-                    updateLocalStorageRecord(id, updatedFields);
-                }
-            } else {
-                updateLocalStorageRecord(id, updatedFields);
-            }
-
-            closeEditModal();
-            loadBetsData();
-        }
-
-        function updateLocalStorageRecord(id, updatedFields) {
-            let localBets = JSON.parse(localStorage.getItem('ej_local_bets') || '[]');
-            localBets = localBets.map(b => b.id === id ? { ...b, ...updatedFields } : b);
-            localStorage.setItem('ej_local_bets', JSON.stringify(localBets));
-            showToast("Record updated locally");
-        }
-
-        async function deleteBet(betId) {
-            if (!confirm("Are you sure you want to delete this bet record?")) return;
-
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('bets').delete().eq('id', betId);
-                    if (error) throw error;
-                    showToast("Bet deleted!");
-                } catch (err) {
-                    deleteFromLocalStorage(betId);
-                }
-            } else {
-                deleteFromLocalStorage(betId);
-            }
-
-            loadBetsData();
-        }
-
-        function deleteFromLocalStorage(betId) {
-            let localBets = JSON.parse(localStorage.getItem('ej_local_bets') || '[]');
-            localBets = localBets.filter(b => b.id !== betId);
-            localStorage.setItem('ej_local_bets', JSON.stringify(localBets));
-            showToast("Bet deleted locally");
-        }
-
-        // CSV EXPORT / IMPORT
-        function exportBetsCSV() {
-            if (betsLog.length === 0) {
-                showToast("No bets to export", true);
-                return;
-            }
-
-            const headers = ["Date", "Type", "Pick", "Odds", "Stake", "Potential Payout", "Result", "Notes"];
-            const rows = betsLog.map(b => [
-                `"${b.date || ''}"`,
-                `"${b.bet_type || ''}"`,
-                `"${(b.pick || '').replace(/"/g, '""')}"`,
-                b.odds,
-                b.stake,
-                b.payout,
-                `"${b.result || ''}"`,
-                `"${(b.notes || '').replace(/"/g, '""')}"`
-            ]);
-
-            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `EJ_NBA_Bets_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Exported CSV!");
-        }
-
-        function importBetsCSV(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const lines = e.target.result.split('\n');
-                let count = 0;
-
-                for (let i = 1; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line) continue;
-
-                    const cols = line.split(',').map(c => c.replace(/^"|"$/g, ''));
-                    if (cols.length >= 7) {
-                        const newBet = {
-                            id: 'import_' + Date.now() + '_' + i,
-                            date: cols[0],
-                            bet_type: cols[1],
-                            pick: cols[2],
-                            odds: parseFloat(cols[3]) || 1.0,
-                            stake: parseFloat(cols[4]) || 0,
-                            payout: parseFloat(cols[5]) || 0,
-                            result: cols[6] || 'Pending',
-                            notes: cols[7] || ''
-                        };
-
-                        saveToLocalStorage(newBet);
-                        count++;
-                    }
-                }
-
-                showToast(`Imported ${count} records!`);
-                loadBetsData();
-            };
-            reader.readAsText(file);
-        }
-
-        // SUPABASE BACKEND
-        function initSupabaseClient() {
-            const savedUrl = localStorage.getItem('ej_supabase_url');
-            const savedKey = localStorage.getItem('ej_supabase_key');
-
-            const urlInput = document.getElementById('cfgSupabaseUrl');
-            const keyInput = document.getElementById('cfgSupabaseKey');
-
-            if (urlInput && savedUrl) urlInput.value = savedUrl;
-            if (keyInput && savedKey) keyInput.value = savedKey;
-
-            const dot = document.getElementById('dbStatusDot');
-            const text = document.getElementById('dbStatusText');
-
-            if (savedUrl && savedKey && window.supabase) {
-                try {
-                    supabaseClient = window.supabase.createClient(savedUrl, savedKey);
-                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-                    if (text) {
-                        text.innerText = 'Supabase Connected';
-                        text.className = 'text-emerald-400';
-                    }
-                } catch (e) {
-                    fallbackLocalStorage(dot, text);
-                }
-            } else {
-                fallbackLocalStorage(dot, text);
-            }
-        }
-
-        function fallbackLocalStorage(dot, text) {
-            supabaseClient = null;
-            if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-            if (text) {
-                text.innerText = 'LocalStorage Mode';
-                text.className = 'text-amber-400';
-            }
-        }
-
-        function saveSupabaseConfig() {
-            const url = document.getElementById('cfgSupabaseUrl').value.trim();
-            const key = document.getElementById('cfgSupabaseKey').value.trim();
-
-            if (!url || !key) {
-                showToast("Enter Supabase URL & Key", true);
-                return;
-            }
-
-            localStorage.setItem('ej_supabase_url', url);
-            localStorage.setItem('ej_supabase_key', key);
-            initSupabaseClient();
-            loadBetsData();
-            showToast("Supabase connected!");
-        }
-
-        function disconnectSupabase() {
-            localStorage.removeItem('ej_supabase_url');
-            localStorage.removeItem('ej_supabase_key');
-            document.getElementById('cfgSupabaseUrl').value = '';
-            document.getElementById('cfgSupabaseKey').value = '';
-            initSupabaseClient();
-            loadBetsData();
-            showToast("Switched to LocalStorage Mode");
-        }
-
-        function openAuthModal() {
-            document.getElementById('authModal').classList.remove('hidden');
-        }
-
-        function closeAuthModal() {
-            document.getElementById('authModal').classList.add('hidden');
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-
-            if (!supabaseClient) {
-                showToast("Configure Supabase first", true);
-                return;
-            }
-
-            try {
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                showToast("Logged in!");
-                closeAuthModal();
-            } catch (err) {
-                showToast(err.message, true);
-            }
-        }
-
-        async function handleSignUp() {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-
-            if (!supabaseClient) {
-                showToast("Configure Supabase first", true);
-                return;
-            }
-
-            try {
-                const { error } = await supabaseClient.auth.signUp({ email, password });
-                if (error) throw error;
-                showToast("Check email for verification!");
-                closeAuthModal();
-            } catch (err) {
-                showToast(err.message, true);
-            }
-        }
-
-        async function handleLogout() {
-            if (supabaseClient) {
-                await supabaseClient.auth.signOut();
-            }
-            showToast("Logged out");
-        }
-
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toastIcon');
-            const toastMsg = document.getElementById('toastMsg');
-
-            if (!toast) return;
-
-            toastMsg.innerText = msg;
-            if (isError) {
-                icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
-            } else {
-                icon.className = 'fa-solid fa-circle-check text-emerald-400';
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-    </script>
+  </div>
+
+  <!-- CONFIG MODAL -->
+  <div class="modal" id="configModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Supabase API Settings</h3>
+        <button onclick="closeModal('configModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase URL</label>
+        <input type="text" id="cfgUrl">
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase Anon Key</label>
+        <input type="text" id="cfgKey">
+      </div>
+      <button class="btn-primary" onclick="saveConfig()">Save API Keys</button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toastMsg">Failed to fetch</div>
+
+  <script>
+    // HARDCODED SUPABASE URL
+    let SUPABASE_URL = localStorage.getItem('sb_url') || 'https://tqfhrkvabhcxedlsmhdw.supabase.co';
+    let SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+    let supabaseClient = null;
+
+    let selections = [];
+    let currentMode = 'single';
+
+    function initSupabase() {
+      if (SUPABASE_URL && SUPABASE_KEY) {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+      document.getElementById('cfgUrl').value = SUPABASE_URL;
+      document.getElementById('cfgKey').value = SUPABASE_KEY;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastMsg');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function saveConfig() {
+      const u = document.getElementById('cfgUrl').value.trim();
+      const k = document.getElementById('cfgKey').value.trim();
+      localStorage.setItem('sb_url', u);
+      localStorage.setItem('sb_key', k);
+      SUPABASE_URL = u;
+      SUPABASE_KEY = k;
+      initSupabase();
+      closeModal('configModal');
+      showToast('Config saved! Reloading...');
+      setTimeout(() => location.reload(), 1000);
+    }
+
+    function addSelection(name, odds) {
+      if (currentMode === 'single') selections = [];
+      selections.push({ name, odds });
+      renderSlip();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnSingle').classList.toggle('active', mode === 'single');
+      document.getElementById('btnParlay').classList.toggle('active', mode === 'parlay');
+      if (mode === 'single' && selections.length > 1) selections = [selections[0]];
+      renderSlip();
+    }
+
+    function renderSlip() {
+      const container = document.getElementById('slipItems');
+      if (selections.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet.</div>`;
+        document.getElementById('totalOdds').innerText = '1.00';
+        calculatePayout();
+        return;
+      }
+
+      container.innerHTML = selections.map((item, index) => `
+        <div class="slip-item">
+          <div><strong>${item.name}</strong></div>
+          <div>${item.odds} <span onclick="removePick(${index})" style="color: #ef4444; cursor: pointer; margin-left: 8px;">✕</span></div>
+        </div>
+      `).join('');
+
+      let totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1);
+      document.getElementById('totalOdds').innerText = totalOdds.toFixed(2);
+      calculatePayout();
+    }
+
+    function removePick(index) {
+      selections.splice(index, 1);
+      renderSlip();
+    }
+
+    function calculatePayout() {
+      let totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1);
+      let stake = parseFloat(document.getElementById('stakeInput').value) || 0;
+      let payout = totalOdds * stake;
+      document.getElementById('payoutDisplay').innerText = '₱' + payout.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    async function handleLogin() {
+      if (!supabaseClient) {
+        showToast('Kailangan mo munang ilagay ang Supabase Anon Key sa Database Settings!');
+        openModal('configModal');
+        return;
+      }
+
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        closeModal('authModal');
+        document.getElementById('userStatus').innerText = 'Logged in as: ' + email;
+        showToast('Login Successful!');
+      } catch (err) {
+        showToast(err.message || 'Failed to fetch');
+      }
+    }
+
+    async function handleSignUp() {
+      if (!supabaseClient) {
+        showToast('Kailangan mo munang ilagay ang Supabase Anon Key sa Settings!');
+        openModal('configModal');
+        return;
+      }
+
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+
+      try {
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) throw error;
+        showToast('Sign up successful! Please check your email.');
+      } catch (err) {
+        showToast(err.message || 'Failed to fetch');
+      }
+    }
+
+    function saveBet() {
+      if (selections.length === 0) {
+        showToast('Pumili muna ng taya sa odds buttons!');
+        return;
+      }
+      showToast('Bet Recorded Successfully!');
+      selections = [];
+      renderSlip();
+    }
+
+    // Initialize
+    initSupabase();
+  </script>
 </body>
 </html>
