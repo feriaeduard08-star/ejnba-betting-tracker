@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EJ NBA Betting Tracker</title>
+  <!-- Supabase JS Client v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -18,93 +19,95 @@
       --red-loss: #ef4444;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-main); display: flex; min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
-    /* SIDEBAR */
-    .sidebar { width: 240px; background: var(--card-bg); border-right: 1px solid var(--card-border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-    .brand { font-size: 1.2rem; font-weight: bold; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; margin-bottom: 30px; }
+    /* LAYOUT & SIDEBAR */
+    .sidebar { width: 250px; background: var(--card-bg); border-right: 1px solid var(--card-border); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; }
+    .brand { font-size: 1.25rem; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 10px; margin-bottom: 32px; letter-spacing: -0.5px; }
     .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .nav-item button { width: 100%; text-align: left; background: transparent; border: none; color: var(--text-muted); padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; }
+    .nav-item button { width: 100%; text-align: left; background: transparent; border: none; color: var(--text-muted); padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px; }
     .nav-item button:hover, .nav-item button.active { background: #1e293b; color: var(--text-main); }
+    .nav-item button.active { border-left: 4px solid var(--accent-blue); border-radius: 4px 8px 8px 4px; }
     
-    /* MAIN CONTENT */
     .main-wrapper { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
-    .header { background: var(--card-bg); border-bottom: 1px solid var(--card-border); padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; }
-    .content-area { padding: 30px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .header { background: var(--card-bg); border-bottom: 1px solid var(--card-border); padding: 18px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .content-area { padding: 32px; display: grid; grid-template-columns: 1fr 360px; gap: 28px; }
 
-    /* STATS DASHBOARD */
-    .stats-row { grid-column: span 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 10px; }
+    /* STATS ROW */
+    .stats-row { grid-column: span 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 8px; }
     .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px; }
-    .stat-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
-    .stat-value { font-size: 1.5rem; font-weight: bold; }
+    .stat-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; }
+    .stat-value { font-size: 1.6rem; font-weight: 800; }
 
-    /* SECTIONS & CARDS */
-    .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .game-header { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 12px; }
-    .teams-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .team { font-weight: bold; font-size: 1rem; }
-    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
-    .odd-btn:hover { border-color: var(--accent-blue); background: #2563eb22; }
+    /* GAMES & ODDS CARDS */
+    .section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .game-header { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 14px; font-weight: 600; }
+    .teams-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .team { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .odd-btn { background: #1e293b; border: 1px solid var(--card-border); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
+    .odd-btn:hover { border-color: var(--accent-blue); background: #2563eb1a; transform: translateY(-1px); }
+    .odd-btn strong { display: block; color: var(--accent-blue); font-size: 1rem; margin-top: 2px; }
 
     /* BET SLIP */
-    .bet-slip { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; height: fit-content; }
+    .bet-slip { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 18px; height: fit-content; position: sticky; top: 100px; }
     .slip-mode { display: flex; background: #1e293b; padding: 4px; border-radius: 8px; }
-    .slip-mode button { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .slip-mode button { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s; }
     .slip-mode button.active { background: var(--accent-blue); color: white; }
-    .slip-item { background: #1e293b; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
+    .slip-item { background: #1e293b; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; margin-bottom: 8px; border: 1px solid var(--card-border); }
     
-    /* INPUT STYLING */
+    /* INPUTS & BUTTONS */
     input[type="text"], input[type="password"], input[type="number"] {
-      width: 100%;
-      background-color: #1e293b !important;
-      color: #ffffff !important;
-      border: 1px solid var(--card-border);
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      outline: none;
+      width: 100%; background-color: #1e293b !important; color: #ffffff !important; border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
     }
+    input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus { border-color: var(--accent-blue); }
 
-    .btn-primary { width: 100%; background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
+    .btn-primary { width: 100%; background: var(--accent-blue); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--accent-glow); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; transition: opacity 0.2s; }
+    .btn-sm:hover { opacity: 0.85; }
 
-    /* HISTORY TABLE */
-    .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--card-border); }
-    .history-table th, .history-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; }
-    .history-table th { background: #1e293b; color: var(--text-muted); }
+    /* BET HISTORY TABLE */
+    .history-container { margin-top: 36px; grid-column: span 2; }
+    .history-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border); }
+    .history-table th, .history-table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 0.88rem; }
+    .history-table th { background: #1e293b; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
 
     /* MODAL & TOAST */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 12px; width: 380px; display: flex; flex-direction: column; gap: 16px; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #3b82f6; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 200; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); padding: 28px; border-radius: 14px; width: 400px; max-width: 90%; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--accent-blue); color: white; padding: 14px 24px; border-radius: 10px; font-weight: 700; display: none; z-index: 200; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); }
 
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
+    /* RESPONSIVE DESIGN */
+    @media (max-width: 900px) {
       body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--card-border); }
-      .content-area { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: repeat(2, 1fr); grid-column: span 1; }
+      .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--card-border); padding: 16px; }
+      .content-area { grid-template-columns: 1fr; padding: 16px; }
+      .stats-row, .history-container { grid-column: span 1; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .bet-slip { position: static; }
     }
   </style>
 </head>
 <body>
 
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR NAVIGATION -->
   <div class="sidebar">
     <div>
-      <div class="brand">🏀 EJ NBA Tracker</div>
+      <div class="brand">🏀 EJ NBA TRACKER</div>
       <ul class="nav-menu">
-        <li class="nav-item"><button class="active" onclick="switchTab('home')">Home</button></li>
-        <li class="nav-item"><button onclick="switchTab('mybets')">My Bets</button></li>
-        <li class="nav-item"><button onclick="switchTab('stats')">Statistics</button></li>
-        <li class="nav-item"><button onclick="openModal('configModal')">Settings</button></li>
-        <li class="nav-item"><button id="logoutBtn" onclick="handleLogout()" style="color: #ef4444; display: none;">Logout</button></li>
+        <li class="nav-item"><button id="navHome" class="active" onclick="switchTab('home')">🏠 Home</button></li>
+        <li class="nav-item"><button id="navBets" onclick="switchTab('mybets')">📋 My Bets</button></li>
+        <li class="nav-item"><button id="navStats" onclick="switchTab('stats')">📊 Statistics</button></li>
+        <li class="nav-item"><button id="navSettings" onclick="openModal('configModal')">⚙️ Settings</button></li>
       </ul>
     </div>
-    <div style="font-size: 0.75rem; color: var(--text-muted);" id="userStatus">Status: Guest Mode</div>
+    <div>
+      <button id="logoutBtn" onclick="handleLogout()" style="width:100%; background: #ef444422; color: #ef4444; border: 1px solid #ef444444; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 12px; display: none;">Logout</button>
+      <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;" id="userStatus">Status: Guest Mode</div>
+    </div>
   </div>
 
   <!-- MAIN WRAPPER -->
@@ -112,13 +115,13 @@
     <div class="header">
       <h2 id="pageTitle">NBA Dashboard</h2>
       <div id="authBtnGroup">
-        <button onclick="openModal('authModal')" style="background: var(--card-border); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Login / Sign Up</button>
+        <button onclick="openModal('authModal')" style="background: var(--card-border); color: white; border: 1px solid var(--card-border); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: bold;">Login / Sign Up</button>
       </div>
     </div>
 
     <div class="content-area">
-      <!-- STATS DASHBOARD -->
-      <div class="stats-row">
+      <!-- STATS OVERVIEW -->
+      <div class="stats-row" id="statsOverview">
         <div class="stat-card">
           <div class="stat-title">Total Bets</div>
           <div class="stat-value" id="statTotal">0</div>
@@ -137,94 +140,122 @@
         </div>
       </div>
 
-      <!-- LEFT: NBA GAMES & HISTORY -->
-      <div id="mainSection">
-        <div class="section-title">
-          <span>1xBet / Live NBA Odds</span>
-          <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 8px; border-radius: 4px;">LIVE FEED</span>
+      <!-- LEFT COLUMN: GAMES & BET HISTORY -->
+      <div id="leftColumn">
+        <div id="homeSection">
+          <div class="section-title">
+            <span>NBA Today Fixtures</span>
+            <span style="font-size: 0.75rem; background: #3b82f622; color: var(--accent-blue); padding: 4px 10px; border-radius: 6px; font-weight: bold;">1xBet ODDS FEED (DEMO)</span>
+          </div>
+
+          <div id="gamesList">
+            <!-- Game 1 -->
+            <div class="game-card">
+              <div class="game-header"><span>7:30 PM ET • TD Garden</span><span>Upcoming</span></div>
+              <div class="teams-container">
+                <span class="team">🟢 Boston Celtics</span>
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
+                <span class="team">🟣 LA Lakers</span>
+              </div>
+              <div class="odds-row">
+                <div class="odd-btn" onclick="addSelection('Celtics ML', 1.85)">Celtics ML<strong>1.85</strong></div>
+                <div class="odd-btn" onclick="addSelection('Lakers ML', 1.95)">Lakers ML<strong>1.95</strong></div>
+                <div class="odd-btn" onclick="addSelection('Over 224.5', 1.90)">O 224.5<strong>1.90</strong></div>
+              </div>
+            </div>
+
+            <!-- Game 2 -->
+            <div class="game-card">
+              <div class="game-header"><span>10:00 PM ET • Chase Center</span><span>Upcoming</span></div>
+              <div class="teams-container">
+                <span class="team">🟡 Golden State Warriors</span>
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
+                <span class="team">🟠 Phoenix Suns</span>
+              </div>
+              <div class="odds-row">
+                <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors ML<strong>1.75</strong></div>
+                <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns ML<strong>2.10</strong></div>
+                <div class="odd-btn" onclick="addSelection('Under 231.0', 1.91)">U 231.0<strong>1.91</strong></div>
+              </div>
+            </div>
+
+            <!-- Game 3 -->
+            <div class="game-card">
+              <div class="game-header"><span>10:30 PM ET • Ball Arena</span><span>Upcoming</span></div>
+              <div class="teams-container">
+                <span class="team">🏔️ Denver Nuggets</span>
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: bold;">VS</span>
+                <span class="team">🔴 Milwaukee Bucks</span>
+              </div>
+              <div class="odds-row">
+                <div class="odd-btn" onclick="addSelection('Nuggets ML', 1.68)">Nuggets ML<strong>1.68</strong></div>
+                <div class="odd-btn" onclick="addSelection('Bucks ML', 2.20)">Bucks ML<strong>2.20</strong></div>
+                <div class="odd-btn" onclick="addSelection('Spread Nuggets -3.5', 1.88)">Nuggets -3.5<strong>1.88</strong></div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div id="gamesList">
-          <div class="game-card">
-            <div class="game-header"><span>7:30 PM ET</span><span>1xBet Market</span></div>
-            <div class="teams-container">
-              <span class="team">Boston Celtics</span>
-              <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
-              <span class="team">LA Lakers</span>
-            </div>
-            <div class="odds-row">
-              <div class="odd-btn" onclick="addSelection('Celtics ML', 1.85)">Celtics ML<br><strong>1.85</strong></div>
-              <div class="odd-btn" onclick="addSelection('Lakers ML', 1.95)">Lakers ML<br><strong>1.95</strong></div>
-              <div class="odd-btn" onclick="addSelection('Over 224.5', 1.90)">O 224.5<br><strong>1.90</strong></div>
+        <!-- MY BETTING HISTORY TABLE -->
+        <div class="history-container" id="historySection">
+          <div class="section-title">
+            <span>Betting Records</span>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="exportCSV()" class="btn-sm" style="background: #1e293b; color: white;">📥 Export CSV</button>
+              <button onclick="document.getElementById('csvInput').click()" class="btn-sm" style="background: #1e293b; color: white;">📤 Import CSV</button>
+              <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(event)">
+              <button onclick="fetchSavedBets()" class="btn-sm" style="background: var(--card-border); color: var(--text-muted);">🔄 Refresh</button>
             </div>
           </div>
 
-          <div class="game-card">
-            <div class="game-header"><span>10:00 PM ET</span><span>1xBet Market</span></div>
-            <div class="teams-container">
-              <span class="team">Golden State Warriors</span>
-              <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
-              <span class="team">Phoenix Suns</span>
-            </div>
-            <div class="odds-row">
-              <div class="odd-btn" onclick="addSelection('Warriors ML', 1.75)">Warriors ML<br><strong>1.75</strong></div>
-              <div class="odd-btn" onclick="addSelection('Suns ML', 2.10)">Suns ML<br><strong>2.10</strong></div>
-              <div class="odd-btn" onclick="addSelection('Under 231.0', 1.91)">U 231.0<br><strong>1.91</strong></div>
-            </div>
-          </div>
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Selection / Parlay Legs</th>
+                <th>Odds</th>
+                <th>Stake</th>
+                <th>Payout</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="betsTableBody">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Please login to load your Supabase betting records.</td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <!-- MY BETS TABLE -->
-        <div class="section-title" style="margin-top: 30px;">
-          <span>My Betting Records</span>
-          <div style="display: flex; gap: 8px;">
-            <button onclick="exportCSV()" class="btn-sm" style="background: #1e293b; color: white;">📥 Export CSV</button>
-            <button onclick="fetchSavedBets()" class="btn-sm" style="background: var(--card-border); color: var(--text-muted);">🔄 Refresh</button>
-          </div>
-        </div>
-
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th>Selection / Parlay Legs</th>
-              <th>Odds</th>
-              <th>Stake</th>
-              <th>Payout</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="betsTableBody">
-            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading bets from Supabase...</td></tr>
-          </tbody>
-        </table>
       </div>
 
-      <!-- RIGHT: BET SLIP -->
+      <!-- RIGHT COLUMN: BET SLIP ENGINE -->
       <div class="bet-slip">
-        <h3>Bet Slip</h3>
+        <h3 style="display:flex; justify-content:space-between; align-items:center;">
+          Bet Slip
+          <span id="slipCountBadge" style="font-size: 0.75rem; background: var(--accent-blue); padding: 2px 8px; border-radius: 12px; color: white;">0</span>
+        </h3>
+        
         <div class="slip-mode">
-          <button id="btnSingle" class="active" onclick="setMode('single')">Single</button>
-          <button id="btnParlay" onclick="setMode('parlay')">Parlay</button>
+          <button id="btnSingle" class="active" onclick="setMode('single')">Single Bet</button>
+          <button id="btnParlay" onclick="setMode('parlay')">Parlay Bet</button>
         </div>
 
         <div id="slipItems">
-          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet. Click odds above.</div>
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 24px 0;">No selections added yet. Click odds buttons to build slip.</div>
         </div>
 
         <div>
-          <label style="font-size: 0.8rem; color: var(--text-muted);">Total Odds</label>
-          <div id="totalOdds" style="font-size: 1.2rem; font-weight: bold; color: var(--accent-blue);">1.00</div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Combined Odds</label>
+          <div id="totalOdds" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-blue);">1.00</div>
         </div>
 
         <div>
-          <label style="font-size: 0.8rem; color: var(--text-muted);">Stake (₱)</label>
-          <input type="number" id="stakeInput" value="100" oninput="calculatePayout()">
+          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Stake Amount (₱)</label>
+          <input type="number" id="stakeInput" value="100" min="1" oninput="calculatePayout()">
         </div>
 
         <div>
-          <label style="font-size: 0.8rem; color: var(--text-muted);">Potential Payout</label>
-          <div id="payoutDisplay" style="font-size: 1.3rem; font-weight: bold; color: var(--green-win);">₱0.00</div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Potential Payout</label>
+          <div id="payoutDisplay" style="font-size: 1.4rem; font-weight: 800; color: var(--green-win);">₱0.00</div>
         </div>
 
         <button class="btn-primary" onclick="saveBet()">Place Bet Record</button>
@@ -232,22 +263,22 @@
     </div>
   </div>
 
-  <!-- AUTH MODAL -->
+  <!-- AUTHENTICATION MODAL -->
   <div class="modal" id="authModal">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Supabase User Account</h3>
-        <button onclick="closeModal('authModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
+        <h3>Supabase User Login</h3>
+        <button onclick="closeModal('authModal')" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem;">✕</button>
       </div>
       <div>
-        <label style="font-size: 0.8rem; color: var(--text-muted);">Email</label>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Email Address</label>
         <input type="text" id="authEmail" placeholder="feriaeduard08@gmail.com">
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-muted);">Password</label>
         <input type="password" id="authPassword" placeholder="••••••••">
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 10px;">
         <button class="btn-primary" onclick="handleLogin()">Login</button>
         <button class="btn-primary" style="background: #1e293b;" onclick="handleSignUp()">Sign Up</button>
       </div>
@@ -258,21 +289,22 @@
   <div class="modal" id="configModal">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Settings & Supabase Keys</h3>
-        <button onclick="closeModal('configModal')" style="background: transparent; border: none; color: white; cursor: pointer;">✕</button>
+        <h3>Supabase Settings</h3>
+        <button onclick="closeModal('configModal')" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem;">✕</button>
       </div>
       <div>
-        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase URL</label>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase Project URL</label>
         <input type="text" id="cfgUrl">
       </div>
       <div>
-        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase Publishable Key</label>
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Supabase Publishable / Anon Key</label>
         <input type="text" id="cfgKey">
       </div>
-      <button class="btn-primary" onclick="saveConfig()">Save Configuration</button>
+      <button class="btn-primary" onclick="saveConfig()">Save Credentials</button>
     </div>
   </div>
 
+  <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toastMsg">Notification</div>
 
   <script>
@@ -300,7 +332,7 @@
       if (session) {
         currentUser = session.user;
         document.getElementById('userStatus').innerText = 'Logged in: ' + currentUser.email;
-        document.getElementById('authBtnGroup').innerHTML = `<span style="font-size: 0.85rem; color: var(--green-win);">● Connected</span>`;
+        document.getElementById('authBtnGroup').innerHTML = `<span style="font-size: 0.85rem; color: var(--green-win); font-weight: bold;">● Connected (${currentUser.email})</span>`;
         document.getElementById('logoutBtn').style.display = 'block';
         fetchSavedBets();
       }
@@ -317,7 +349,26 @@
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     function switchTab(tab) {
-      showToast('Navigating to ' + tab.toUpperCase());
+      document.querySelectorAll('.nav-item button').forEach(b => b.classList.remove('active'));
+      const homeSec = document.getElementById('homeSection');
+      const histSec = document.getElementById('historySection');
+
+      if (tab === 'home') {
+        document.getElementById('navHome').classList.add('active');
+        homeSec.style.display = 'block';
+        histSec.style.display = 'block';
+        document.getElementById('pageTitle').innerText = 'NBA Dashboard';
+      } else if (tab === 'mybets') {
+        document.getElementById('navBets').classList.add('active');
+        homeSec.style.display = 'none';
+        histSec.style.display = 'block';
+        document.getElementById('pageTitle').innerText = 'My Betting History';
+      } else if (tab === 'stats') {
+        document.getElementById('navStats').classList.add('active');
+        homeSec.style.display = 'none';
+        histSec.style.display = 'block';
+        document.getElementById('pageTitle').innerText = 'Detailed Statistics';
+      }
     }
 
     function saveConfig() {
@@ -344,8 +395,10 @@
 
     function renderSlip() {
       const container = document.getElementById('slipItems');
+      document.getElementById('slipCountBadge').innerText = selections.length;
+
       if (selections.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No selections added yet.</div>`;
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 24px 0;">No selections added yet. Click odds buttons to build slip.</div>`;
         document.getElementById('totalOdds').innerText = '1.00';
         calculatePayout();
         return;
@@ -354,7 +407,7 @@
       container.innerHTML = selections.map((item, index) => `
         <div class="slip-item">
           <div><strong>${item.name}</strong></div>
-          <div>${item.odds} <span onclick="removePick(${index})" style="color: #ef4444; cursor: pointer; margin-left: 8px;">✕</span></div>
+          <div><strong style="color:var(--accent-blue);">${item.odds.toFixed(2)}</strong> <span onclick="removePick(${index})" style="color: #ef4444; cursor: pointer; margin-left: 8px; font-weight:bold;">✕</span></div>
         </div>
       `).join('');
 
@@ -422,7 +475,11 @@
       const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1);
       const stake = parseFloat(document.getElementById('stakeInput').value) || 0;
       const payout = totalOdds * stake;
-      const title = selections.map(s => s.name).join(' + ');
+      
+      // PARLAY ENCODING IN SELECTION FIELD
+      const title = currentMode === 'parlay' 
+        ? `[PARLAY (${selections.length} Legs)] ` + selections.map(s => `${s.name} @${s.odds}`).join(' | ')
+        : selections.map(s => `${s.name} @${s.odds}`).join('');
 
       const betRecord = {
         user_id: currentUser ? currentUser.id : null,
@@ -441,7 +498,7 @@
         }
       }
 
-      showToast('Bet Saved Successfully!');
+      showToast('Bet Record Saved Successfully!');
       selections = [];
       renderSlip();
       fetchSavedBets();
@@ -451,7 +508,7 @@
     async function fetchSavedBets() {
       const tableBody = document.getElementById('betsTableBody');
       if (!supabaseClient || !currentUser) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Please login to load your betting records.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Please login to load your betting records.</td></tr>`;
         return;
       }
 
@@ -461,15 +518,15 @@
         .order('created_at', { ascending: false });
 
       if (error || !bets || bets.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No recorded bets found in your Supabase account.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No recorded bets found in your Supabase account.</td></tr>`;
         return;
       }
 
-      // Stats Calculation
+      // STATISTICS ENGINE
       const totalBets = bets.length;
       const wonBets = bets.filter(b => b.status === 'Won');
       const lostBets = bets.filter(b => b.status === 'Lost');
-      const winRate = totalBets > 0 ? ((wonBets.length / (wonBets.length + lostBets.length || 1)) * 100).toFixed(0) : 0;
+      const winRate = (wonBets.length + lostBets.length) > 0 ? ((wonBets.length / (wonBets.length + lostBets.length)) * 100).toFixed(0) : 0;
       
       const totalStake = bets.reduce((sum, b) => sum + (parseFloat(b.stake) || 0), 0);
       const totalProfit = bets.reduce((sum, b) => {
@@ -484,25 +541,31 @@
       document.getElementById('statProfit').innerText = (totalProfit >= 0 ? '+' : '') + '₱' + totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2});
       document.getElementById('statProfit').style.color = totalProfit >= 0 ? 'var(--green-win)' : 'var(--red-loss)';
 
-      // Table Render
-      tableBody.innerHTML = bets.map(b => `
-        <tr>
-          <td><strong>${b.selection || 'Single Bet'}</strong></td>
-          <td>${parseFloat(b.odds).toFixed(2)}</td>
-          <td>₱${parseFloat(b.stake).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          <td style="color: var(--green-win);">₱${parseFloat(b.payout).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          <td>
-            <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: ${b.status === 'Won' ? '#10b98133' : b.status === 'Lost' ? '#ef444433' : '#3b82f633'}; color: ${b.status === 'Won' ? 'var(--green-win)' : b.status === 'Lost' ? 'var(--red-loss)' : 'var(--accent-blue)'};">
-              ${b.status || 'Pending'}
-            </span>
-          </td>
-          <td>
-            <button onclick="updateStatus('${b.id}', 'Won')" class="btn-sm" style="background: #10b981; color: white;">W</button>
-            <button onclick="updateStatus('${b.id}', 'Lost')" class="btn-sm" style="background: #ef4444; color: white;">L</button>
-            <button onclick="deleteBet('${b.id}')" class="btn-sm" style="background: transparent; color: var(--text-muted);">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
+      // TABLE RENDER
+      tableBody.innerHTML = bets.map(b => {
+        const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today';
+        return `
+          <tr>
+            <td style="color: var(--text-muted); font-size: 0.8rem;">${dateStr}</td>
+            <td><strong>${b.selection || 'Single Bet'}</strong></td>
+            <td><strong>${parseFloat(b.odds).toFixed(2)}</strong></td>
+            <td>₱${parseFloat(b.stake).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+            <td style="color: var(--green-win); font-weight: bold;">₱${parseFloat(b.payout).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+            <td>
+              <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; background: ${b.status === 'Won' ? '#10b98133' : b.status === 'Lost' ? '#ef444433' : '#3b82f633'}; color: ${b.status === 'Won' ? 'var(--green-win)' : b.status === 'Lost' ? 'var(--red-loss)' : 'var(--accent-blue)'};">
+                ${b.status || 'Pending'}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 4px;">
+                <button onclick="updateStatus('${b.id}', 'Won')" class="btn-sm" style="background: #10b981; color: white;">W</button>
+                <button onclick="updateStatus('${b.id}', 'Lost')" class="btn-sm" style="background: #ef4444; color: white;">L</button>
+                <button onclick="deleteBet('${b.id}')" class="btn-sm" style="background: transparent; color: var(--text-muted);">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function updateStatus(id, newStatus) {
@@ -519,8 +582,53 @@
       fetchSavedBets();
     }
 
-    function exportCSV() {
-      showToast('Preparing CSV download...');
+    // CSV EXPORT ENGINE
+    async function exportCSV() {
+      if (!supabaseClient || !currentUser) return showToast('Please login first');
+      const { data: bets } = await supabaseClient.from('bets').select('*');
+      if (!bets || bets.length === 0) return showToast('No data to export');
+
+      let csv = 'Date,Selection,Odds,Stake,Payout,Status\n';
+      bets.forEach(b => {
+        csv += `"${b.created_at}","${b.selection}",${b.odds},${b.stake},${b.payout},${b.status}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `nba_bets_backup_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    // CSV IMPORT ENGINE
+    function importCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const lines = evt.target.result.split('\n').slice(1);
+        let records = [];
+        lines.forEach(line => {
+          const cols = line.split(',');
+          if (cols.length >= 6) {
+            records.push({
+              user_id: currentUser ? currentUser.id : null,
+              selection: cols[1].replace(/"/g, ''),
+              odds: parseFloat(cols[2]),
+              stake: parseFloat(cols[3]),
+              payout: parseFloat(cols[4]),
+              status: cols[5].trim()
+            });
+          }
+        });
+        if (records.length > 0 && supabaseClient) {
+          await supabaseClient.from('bets').insert(records);
+          showToast('Imported ' + records.length + ' records!');
+          fetchSavedBets();
+        }
+      };
+      reader.readAsText(file);
     }
 
     // Initialize on page load
